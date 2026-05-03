@@ -1,0 +1,39 @@
+{
+  "name": "roster-maker",
+  "version": "0.1.0",
+  "description": "Tabletop wargame roster builder and game-day companion",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm -r run build",
+    "preview": "pnpm -r run preview",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint"
+  },
+  "keywords": [
+    "warhammer40k",
+    "roster",
+    "builder",
+    "tabletop",
+    "wargaming",
+    "game-tracker"
+  ],
+  "author": "rtricher",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.4.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "typescript": "^5.4.0"
+    }
+  }
+}
