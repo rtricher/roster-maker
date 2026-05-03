@@ -1,0 +1,11 @@
+{
+  "name": "@roster-maker/database",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "migrate": "node scripts/migrate.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
