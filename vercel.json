@@ -1,0 +1,6 @@
+{
+  "installCommand": "corepack enable && pnpm install --no-frozen-lockfile",
+  "buildCommand": "cd apps/web && pnpm build",
+  "outputDirectory": "apps/web/dist",
+  "framework": "vite"
+}
