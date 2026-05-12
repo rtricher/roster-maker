@@ -1,4 +1,4 @@
-import type { Unit } from '../../../packages/shared/src/types'
+import type { Unit } from '../../../../packages/shared/src/types'
 
 interface StatsDropdownProps {
   unit: Unit

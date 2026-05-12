@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MOCK_ROSTERS } from '../data/mockData'
-import type { Roster } from '../../../packages/shared/src/types'
+import type { Roster } from '../../../../packages/shared/src/types'
 
 export default function Home() {
   const navigate = useNavigate()

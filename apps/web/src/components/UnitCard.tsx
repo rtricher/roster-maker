@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Unit } from '../../../packages/shared/src/types'
+import type { Unit } from '../../../../packages/shared/src/types'
 import LifeCounter from './LifeCounter'
 import StatsDropdown from './StatsDropdown'
 import UnitDetailModal from './UnitDetailModal'

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { Unit } from '../../../packages/shared/src/types'
-import { generateId } from '../../../packages/shared/src/utils'
+import type { Unit } from '../../../../packages/shared/src/types'
+import { generateId } from '../../../../packages/shared/src/utils'
 
 interface AddUnitFormProps {
   onAdd: (unit: Unit) => void
