@@ -1,6 +1,6 @@
 {
-  "installCommand": "corepack enable && pnpm install --no-frozen-lockfile",
-  "buildCommand": "cd apps/web && pnpm build",
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "cd apps/web && npx vite build",
   "outputDirectory": "apps/web/dist",
-  "framework": "vite"
+  "framework": null
 }
