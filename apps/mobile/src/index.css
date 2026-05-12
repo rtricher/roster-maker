@@ -10,10 +10,3 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
-/* Mobile-first responsive design */
-@media (max-width: 640px) {
-  body {
-    font-size: 16px; /* Prevent zoom on iOS */
-  }
-}
