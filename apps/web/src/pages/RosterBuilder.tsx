@@ -1,98 +1,69 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { MOCK_ROSTER } from '../data/mockData'
+import type { Unit } from '../../../packages/shared/src/types'
+import { calculateRosterPoints } from '../../../packages/shared/src/utils'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
+import UnitCard from '../components/UnitCard'
+import AddUnitForm from '../components/AddUnitForm'
 
-interface Unit {
-  id: string
-  name: string
-  points: number
-}
+export default function RosterBuilder() {
+  const navigate = useNavigate()
+  const [units, setUnits] = useState<Unit[]>(MOCK_ROSTER.units)
+  const [turn, setTurn] = useState(1)
+  const [commandPoints, setCommandPoints] = useState(0)
+  const [showAddForm, setShowAddForm] = useState(false)
 
-function RosterBuilder() {
-  const [units, setUnits] = useState<Unit[]>([])
-  const [unitName, setUnitName] = useState('')
-  const [unitPoints, setUnitPoints] = useState('')
+  const totalPoints = calculateRosterPoints(units)
 
-  const addUnit = () => {
-    if (unitName && unitPoints) {
-      setUnits([...units, {
-        id: Date.now().toString(),
-        name: unitName,
-        points: parseInt(unitPoints),
-      }])
-      setUnitName('')
-      setUnitPoints('')
-    }
+  const handleUpdateWounds = (unitId: string, newWounds: number) => {
+    setUnits((prev) =>
+      prev.map((u) => (u.id === unitId ? { ...u, currentWounds: newWounds } : u))
+    )
   }
 
-  const removeUnit = (id: string) => {
-    setUnits(units.filter(u => u.id !== id))
+  const handleAddUnit = (unit: Unit) => {
+    setUnits((prev) => [...prev, unit])
+    setShowAddForm(false)
   }
-
-  const totalPoints = units.reduce((sum, unit) => sum + unit.points, 0)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-white p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">🎨 Roster Builder</h1>
-        
-        <div className="bg-slate-700 rounded-lg p-6 mb-8">
-          <div className="grid md:grid-cols-3 gap-4 mb-4">
-            <input
-              type="text"
-              placeholder="Unit name"
-              value={unitName}
-              onChange={(e) => setUnitName(e.target.value)}
-              className="px-4 py-2 rounded bg-slate-600 text-white placeholder-slate-400"
-            />
-            <input
-              type="number"
-              placeholder="Points"
-              value={unitPoints}
-              onChange={(e) => setUnitPoints(e.target.value)}
-              className="px-4 py-2 rounded bg-slate-600 text-white placeholder-slate-400"
-            />
-            <button
-              onClick={addUnit}
-              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold transition"
-            >
-              Add Unit
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-surface-900 text-gray-100 flex flex-col">
+      <Header
+        rosterName={MOCK_ROSTER.name}
+        faction={MOCK_ROSTER.faction}
+        detachment={MOCK_ROSTER.detachment}
+        totalPoints={totalPoints}
+        maxPoints={MOCK_ROSTER.maxPoints}
+        onBack={() => navigate('/')}
+      />
 
-        <div className="bg-slate-700 rounded-lg overflow-hidden">
-          <div className="bg-slate-800 px-6 py-4 border-b border-slate-600">
-            <h2 className="text-2xl font-bold">Roster ({totalPoints} pts)</h2>
-          </div>
-          
-          {units.length === 0 ? (
-            <div className="px-6 py-8 text-center text-slate-400">
-              No units added yet. Create your first unit above!
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-600">
-              {units.map((unit) => (
-                <div
-                  key={unit.id}
-                  className="px-6 py-4 flex justify-between items-center hover:bg-slate-600 transition"
-                >
-                  <div>
-                    <p className="font-semibold">{unit.name}</p>
-                    <p className="text-sm text-slate-400">{unit.points} points</p>
-                  </div>
-                  <button
-                    onClick={() => removeUnit(unit.id)}
-                    className="text-red-400 hover:text-red-300 transition"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* Unit list */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
+        {units.map((unit) => (
+          <UnitCard key={unit.id} unit={unit} onUpdateWounds={handleUpdateWounds} />
+        ))}
+
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="w-full py-3 rounded-lg border-2 border-dashed border-surface-600 text-gray-500 hover:text-olive-400 hover:border-olive-500/50 transition-colors text-sm font-medium"
+        >
+          + Add Unit
+        </button>
       </div>
+
+      <Footer
+        turn={turn}
+        commandPoints={commandPoints}
+        onTurnChange={setTurn}
+        onCPChange={setCommandPoints}
+        onGameOptions={() => navigate('/game')}
+      />
+
+      {showAddForm && (
+        <AddUnitForm onAdd={handleAddUnit} onCancel={() => setShowAddForm(false)} />
+      )}
     </div>
   )
 }
-
-export default RosterBuilder
