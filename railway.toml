@@ -1,0 +1,12 @@
+# Railway Deployment Configuration
+# This tells Railway to only build/deploy the API app
+
+[build]
+builder = "nixpacks"
+buildCommand = "cd apps/api && npm install && npm run build"
+
+[deploy]
+startCommand = "cd apps/api && npm run start"
+
+[build.env]
+NODE_ENV = "production"
