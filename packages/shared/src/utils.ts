@@ -2,8 +2,10 @@
  * Utility functions for Roster Maker
  */
 
-export function calculateRosterPoints(units: any[]): number {
-  return units.reduce((total, unit) => total + (unit.points * (unit.count || 1)), 0)
+import type { Unit, Roster } from './types'
+
+export function calculateRosterPoints(units: Unit[]): number {
+  return units.reduce((total, unit) => total + unit.points, 0)
 }
 
 export function formatDate(date: Date): string {
@@ -23,4 +25,17 @@ export function formatTime(date: Date): string {
 
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2)
+}
+
+export function createEmptyRoster(name: string, faction: string): Roster {
+  return {
+    id: generateId(),
+    name,
+    faction,
+    totalPoints: 0,
+    maxPoints: 2000,
+    units: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
 }
