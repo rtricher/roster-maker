@@ -7,9 +7,10 @@ import UnitDetailModal from './UnitDetailModal'
 interface UnitCardProps {
   unit: Unit
   onUpdateWounds: (unitId: string, newWounds: number) => void
+  onRemove?: () => void
 }
 
-export default function UnitCard({ unit, onUpdateWounds }: UnitCardProps) {
+export default function UnitCard({ unit, onUpdateWounds, onRemove }: UnitCardProps) {
   const [statsOpen, setStatsOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -43,6 +44,15 @@ export default function UnitCard({ unit, onUpdateWounds }: UnitCardProps) {
             >
               More
             </button>
+            {onRemove && (
+              <button
+                onClick={onRemove}
+                className="px-2 py-1 rounded text-xs font-medium bg-surface-600 text-gray-400 hover:text-red-400 transition-colors"
+                title="Remove unit"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
 

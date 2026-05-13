@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { MOCK_ROSTER } from '../data/mockData'
-import type { Unit } from '../../../../packages/shared/src/types'
-import { calculateRosterPoints } from '../../../../packages/shared/src/utils'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import type { Roster, Unit } from '../../../../packages/shared/src/types'
+import { useAuth } from '../lib/AuthContext'
+import { getRosters, addUnit, removeUnit } from '../lib/rosterService'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import UnitCard from '../components/UnitCard'
@@ -10,12 +10,38 @@ import AddUnitForm from '../components/AddUnitForm'
 
 export default function RosterBuilder() {
   const navigate = useNavigate()
-  const [units, setUnits] = useState<Unit[]>(MOCK_ROSTER.units)
+  const [searchParams] = useSearchParams()
+  const rosterId = searchParams.get('id')
+  const { user, loading: authLoading } = useAuth()
+
+  const [roster, setRoster] = useState<Roster | null>(null)
+  const [units, setUnits] = useState<Unit[]>([])
+  const [loading, setLoading] = useState(true)
   const [turn, setTurn] = useState(1)
   const [commandPoints, setCommandPoints] = useState(0)
   const [showAddForm, setShowAddForm] = useState(false)
 
-  const totalPoints = calculateRosterPoints(units)
+  useEffect(() => {
+    if (authLoading) return
+    if (!rosterId) {
+      navigate('/')
+      return
+    }
+    loadRoster()
+  }, [rosterId, user, authLoading])
+
+  const loadRoster = async () => {
+    setLoading(true)
+    const rosters = await getRosters(user)
+    const found = rosters.find((r) => r.id === rosterId)
+    if (found) {
+      setRoster(found)
+      setUnits(found.units.map((u) => ({ ...u, currentWounds: u.count })))
+    } else {
+      navigate('/')
+    }
+    setLoading(false)
+  }
 
   const handleUpdateWounds = (unitId: string, newWounds: number) => {
     setUnits((prev) =>
@@ -23,26 +49,68 @@ export default function RosterBuilder() {
     )
   }
 
-  const handleAddUnit = (unit: Unit) => {
-    setUnits((prev) => [...prev, unit])
+  const handleAddUnit = async (unit: Unit) => {
+    if (!rosterId) return
+    const success = await addUnit(user, rosterId, unit)
+    if (success) {
+      setUnits((prev) => [...prev, unit])
+      if (roster) {
+        setRoster({ ...roster, totalPoints: roster.totalPoints + unit.points })
+      }
+    }
     setShowAddForm(false)
+  }
+
+  const handleRemoveUnit = async (unitId: string) => {
+    if (!rosterId) return
+    if (!confirm('Remove this unit from the roster?')) return
+    const unit = units.find((u) => u.id === unitId)
+    const success = await removeUnit(user, rosterId, unitId)
+    if (success) {
+      setUnits((prev) => prev.filter((u) => u.id !== unitId))
+      if (roster && unit) {
+        setRoster({ ...roster, totalPoints: roster.totalPoints - unit.points })
+      }
+    }
+  }
+
+  const totalPoints = units.reduce((sum, u) => sum + u.points, 0)
+
+  if (loading || !roster) {
+    return (
+      <div className="min-h-screen bg-surface-900 text-gray-100 flex items-center justify-center">
+        <p className="text-gray-500">Loading roster...</p>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-surface-900 text-gray-100 flex flex-col">
       <Header
-        rosterName={MOCK_ROSTER.name}
-        faction={MOCK_ROSTER.faction}
-        detachment={MOCK_ROSTER.detachment}
+        rosterName={roster.name}
+        faction={roster.faction}
+        detachment={roster.detachment}
         totalPoints={totalPoints}
-        maxPoints={MOCK_ROSTER.maxPoints}
+        maxPoints={roster.maxPoints}
         onBack={() => navigate('/')}
       />
 
       {/* Unit list */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
+        {units.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            <p>No units yet</p>
+            <p className="text-sm mt-1">Add your first unit to build this roster</p>
+          </div>
+        )}
+
         {units.map((unit) => (
-          <UnitCard key={unit.id} unit={unit} onUpdateWounds={handleUpdateWounds} />
+          <UnitCard
+            key={unit.id}
+            unit={unit}
+            onUpdateWounds={handleUpdateWounds}
+            onRemove={() => handleRemoveUnit(unit.id)}
+          />
         ))}
 
         <button
