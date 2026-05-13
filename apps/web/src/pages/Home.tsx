@@ -2,17 +2,45 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MOCK_ROSTERS } from '../data/mockData'
 import type { Roster } from '../../../../packages/shared/src/types'
+import { useAuth } from '../lib/AuthContext'
 
 export default function Home() {
   const navigate = useNavigate()
+  const { user, loading, signOut } = useAuth()
   const [rosters] = useState<Roster[]>(MOCK_ROSTERS)
 
   return (
     <div className="min-h-screen bg-surface-900 text-gray-100">
       {/* Header */}
       <div className="bg-surface-800 border-b border-surface-600 px-4 py-6">
-        <h1 className="text-2xl font-bold">⚔ Roster Maker</h1>
-        <p className="text-sm text-gray-400 mt-1">Warhammer 40K Roster Builder & Game Tracker</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">⚔ Roster Maker</h1>
+            <p className="text-sm text-gray-400 mt-1">Tabletop Wargame Roster Builder & Game Tracker</p>
+          </div>
+          <div className="text-right">
+            {loading ? (
+              <span className="text-xs text-gray-500">...</span>
+            ) : user ? (
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-xs text-olive-400">{user.email}</span>
+                <button
+                  onClick={signOut}
+                  className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => navigate('/auth')}
+                className="px-4 py-2 rounded-lg bg-surface-700 hover:bg-surface-600 text-gray-300 text-sm transition-colors"
+              >
+                Sign In
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Roster list */}
