@@ -12,9 +12,13 @@
 import type { User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import type { Roster, Unit } from '../../../../packages/shared/src/types'
-import { generateId } from '../../../../packages/shared/src/utils'
 
 const GUEST_ROSTERS_KEY = 'rm_guest_rosters'
+
+/** Generate a real UUID (works in all modern browsers) */
+function uuid(): string {
+  return crypto.randomUUID()
+}
 
 // ── Guest (localStorage) ────────────────────────────────────────
 
@@ -63,7 +67,7 @@ export async function getRosters(user: User | null): Promise<Roster[]> {
   const { data: units } = await supabase
     .from('units')
     .select('*')
-    .in('roster_id', rosterIds.length > 0 ? rosterIds : ['none'])
+    .in('roster_id', rosterIds.length > 0 ? rosterIds : ['00000000-0000-0000-0000-000000000000'])
 
   return rosters.map((r: any) => ({
     id: r.id,
@@ -90,9 +94,8 @@ export async function createRoster(
   const now = new Date()
 
   if (!user) {
-    // Guest: save to localStorage
     const roster: Roster = {
-      id: generateId(),
+      id: uuid(),
       name,
       faction,
       detachment,
@@ -108,7 +111,7 @@ export async function createRoster(
     return roster
   }
 
-  // Logged in: save to Supabase
+  // Let Supabase generate the UUID for the roster
   const { data, error } = await supabase
     .from('rosters')
     .insert({
@@ -197,8 +200,8 @@ export async function addUnit(user: User | null, rosterId: string, unit: Unit): 
     return true
   }
 
+  // Let Supabase generate the UUID — don't pass unit.id
   const { error } = await supabase.from('units').insert({
-    id: unit.id,
     roster_id: rosterId,
     name: unit.name,
     points: unit.points,
@@ -219,7 +222,6 @@ export async function addUnit(user: User | null, rosterId: string, unit: Unit): 
     return false
   }
 
-  // Update roster total points
   await recalculateRosterPoints(rosterId)
   return true
 }
