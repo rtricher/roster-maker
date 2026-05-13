@@ -3,10 +3,6 @@
  *
  * Logged-in users: rosters are saved to Supabase
  * Guest users: rosters are saved to localStorage (persists between visits)
- *
- * This is where you could introduce limits for free vs paid users:
- * - Free: max 3 rosters
- * - Paid: unlimited rosters
  */
 
 import type { User } from '@supabase/supabase-js'
@@ -15,7 +11,6 @@ import type { Roster, Unit } from '../../../../packages/shared/src/types'
 
 const GUEST_ROSTERS_KEY = 'rm_guest_rosters'
 
-/** Generate a real UUID (works in all modern browsers) */
 function uuid(): string {
   return crypto.randomUUID()
 }
@@ -62,7 +57,6 @@ export async function getRosters(user: User | null): Promise<Roster[]> {
     return []
   }
 
-  // Load units for each roster
   const rosterIds = rosters.map((r: any) => r.id)
   const { data: units } = await supabase
     .from('units')
@@ -111,7 +105,6 @@ export async function createRoster(
     return roster
   }
 
-  // Let Supabase generate the UUID for the roster
   const { data, error } = await supabase
     .from('rosters')
     .insert({
@@ -188,42 +181,47 @@ export async function updateRoster(
 
 // ── Units ───────────────────────────────────────────────────────
 
-export async function addUnit(user: User | null, rosterId: string, unit: Unit): Promise<boolean> {
+/** Returns the saved unit with the DB-generated ID, or null on failure */
+export async function addUnit(user: User | null, rosterId: string, unit: Unit): Promise<Unit | null> {
   if (!user) {
     const rosters = loadGuestRosters()
     const idx = rosters.findIndex((r) => r.id === rosterId)
-    if (idx === -1) return false
-    rosters[idx].units.push(unit)
+    if (idx === -1) return null
+    const savedUnit = { ...unit, id: uuid() }
+    rosters[idx].units.push(savedUnit)
     rosters[idx].totalPoints = rosters[idx].units.reduce((sum, u) => sum + u.points, 0)
     rosters[idx].updatedAt = new Date()
     saveGuestRosters(rosters)
-    return true
+    return savedUnit
   }
 
-  // Let Supabase generate the UUID — don't pass unit.id
-  const { error } = await supabase.from('units').insert({
-    roster_id: rosterId,
-    name: unit.name,
-    points: unit.points,
-    count: unit.count,
-    notes: unit.notes || null,
-    movement: unit.movement,
-    toughness: unit.toughness,
-    save: unit.save,
-    wounds: unit.wounds,
-    leadership: unit.leadership,
-    objective_control: unit.objectiveControl,
-    abilities: unit.abilities,
-    weapons: unit.weapons,
-  })
+  const { data, error } = await supabase
+    .from('units')
+    .insert({
+      roster_id: rosterId,
+      name: unit.name,
+      points: unit.points,
+      count: unit.count,
+      notes: unit.notes || null,
+      movement: unit.movement,
+      toughness: unit.toughness,
+      save: unit.save,
+      wounds: unit.wounds,
+      leadership: unit.leadership,
+      objective_control: unit.objectiveControl,
+      abilities: unit.abilities,
+      weapons: unit.weapons,
+    })
+    .select()
+    .single()
 
   if (error) {
     console.error('Failed to add unit:', error)
-    return false
+    return null
   }
 
   await recalculateRosterPoints(rosterId)
-  return true
+  return mapUnitFromDb(data)
 }
 
 export async function removeUnit(user: User | null, rosterId: string, unitId: string): Promise<boolean> {
