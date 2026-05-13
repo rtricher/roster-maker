@@ -51,11 +51,12 @@ export default function RosterBuilder() {
 
   const handleAddUnit = async (unit: Unit) => {
     if (!rosterId) return
-    const success = await addUnit(user, rosterId, unit)
-    if (success) {
-      setUnits((prev) => [...prev, unit])
+    const savedUnit = await addUnit(user, rosterId, unit)
+    if (savedUnit) {
+      // Use the DB-generated unit (with real UUID) not the form-generated one
+      setUnits((prev) => [...prev, { ...savedUnit, currentWounds: savedUnit.count }])
       if (roster) {
-        setRoster({ ...roster, totalPoints: roster.totalPoints + unit.points })
+        setRoster({ ...roster, totalPoints: roster.totalPoints + savedUnit.points })
       }
     }
     setShowAddForm(false)
@@ -95,7 +96,6 @@ export default function RosterBuilder() {
         onBack={() => navigate('/')}
       />
 
-      {/* Unit list */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
         {units.length === 0 && (
           <div className="text-center py-12 text-gray-500">
