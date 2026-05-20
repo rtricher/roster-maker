@@ -5,9 +5,10 @@ interface HeaderProps {
   totalPoints: number
   maxPoints: number
   onBack: () => void
+  onEdit?: () => void
 }
 
-export default function Header({ rosterName, faction, detachment, totalPoints, maxPoints, onBack }: HeaderProps) {
+export default function Header({ rosterName, faction, detachment, totalPoints, maxPoints, onBack, onEdit }: HeaderProps) {
   const overBudget = totalPoints > maxPoints
 
   return (
@@ -17,7 +18,18 @@ export default function Header({ rosterName, faction, detachment, totalPoints, m
           ←
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-bold text-gray-100 truncate">{rosterName}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-bold text-gray-100 truncate">{rosterName}</h1>
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="text-gray-500 hover:text-olive-400 transition-colors text-sm"
+                title="Edit roster"
+              >
+                ✎
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-olive-400">{faction}</span>
             {detachment && (
@@ -33,6 +45,7 @@ export default function Header({ rosterName, faction, detachment, totalPoints, m
             {totalPoints}
           </div>
           <div className="text-xs text-gray-500">/ {maxPoints} pts</div>
+          {overBudget && <div className="text-[10px] text-red-400">Over budget</div>}
         </div>
       </div>
     </div>
