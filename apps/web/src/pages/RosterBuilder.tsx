@@ -10,6 +10,11 @@ import AddUnitForm from '../components/AddUnitForm'
 import EditRosterModal from '../components/EditRosterModal'
 import EditUnitModal from '../components/EditUnitModal'
 
+/** Initialize wound array: each model starts at full wounds */
+function initModelWounds(unit: Unit): number[] {
+  return Array.from({ length: unit.count }, () => unit.wounds)
+}
+
 export default function RosterBuilder() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -18,6 +23,8 @@ export default function RosterBuilder() {
 
   const [roster, setRoster] = useState<Roster | null>(null)
   const [units, setUnits] = useState<Unit[]>([])
+  // Per-unit wound tracking: { unitId: [woundsModel1, woundsModel2, ...] }
+  const [woundState, setWoundState] = useState<Record<string, number[]>>({})
   const [loading, setLoading] = useState(true)
   const [turn, setTurn] = useState(1)
   const [commandPoints, setCommandPoints] = useState(0)
@@ -40,24 +47,29 @@ export default function RosterBuilder() {
     const found = rosters.find((r) => r.id === rosterId)
     if (found) {
       setRoster(found)
-      setUnits(found.units.map((u) => ({ ...u, currentWounds: u.count })))
+      setUnits(found.units)
+      // Initialize wound state for all units
+      const wounds: Record<string, number[]> = {}
+      found.units.forEach((u) => {
+        wounds[u.id] = initModelWounds(u)
+      })
+      setWoundState(wounds)
     } else {
       navigate('/')
     }
     setLoading(false)
   }
 
-  const handleUpdateWounds = (unitId: string, newWounds: number) => {
-    setUnits((prev) =>
-      prev.map((u) => (u.id === unitId ? { ...u, currentWounds: newWounds } : u))
-    )
+  const handleUpdateModelWounds = (unitId: string, modelWounds: number[]) => {
+    setWoundState((prev) => ({ ...prev, [unitId]: modelWounds }))
   }
 
   const handleAddUnit = async (unit: Unit) => {
     if (!rosterId) return
     const savedUnit = await addUnit(user, rosterId, unit)
     if (savedUnit) {
-      setUnits((prev) => [...prev, { ...savedUnit, currentWounds: savedUnit.count }])
+      setUnits((prev) => [...prev, savedUnit])
+      setWoundState((prev) => ({ ...prev, [savedUnit.id]: initModelWounds(savedUnit) }))
       if (roster) {
         setRoster({ ...roster, totalPoints: roster.totalPoints + savedUnit.points })
       }
@@ -72,6 +84,11 @@ export default function RosterBuilder() {
     const success = await removeUnit(user, rosterId, unitId)
     if (success) {
       setUnits((prev) => prev.filter((u) => u.id !== unitId))
+      setWoundState((prev) => {
+        const next = { ...prev }
+        delete next[unitId]
+        return next
+      })
       if (roster && unit) {
         setRoster({ ...roster, totalPoints: roster.totalPoints - unit.points })
       }
@@ -91,10 +108,11 @@ export default function RosterBuilder() {
     if (!rosterId || !editingUnit) return
     const saved = await updateUnit(user, rosterId, editingUnit.id, updates)
     if (saved) {
-      setUnits((prev) =>
-        prev.map((u) => (u.id === editingUnit.id ? { ...saved, currentWounds: u.currentWounds } : u))
-      )
-      // Recalculate points in local state
+      setUnits((prev) => prev.map((u) => (u.id === editingUnit.id ? saved : u)))
+      // Re-initialize wound state if model count or wounds changed
+      if (updates.count !== undefined || updates.wounds !== undefined) {
+        setWoundState((prev) => ({ ...prev, [editingUnit.id]: initModelWounds(saved) }))
+      }
       if (roster) {
         const newTotal = units.reduce((sum, u) => {
           if (u.id === editingUnit.id) return sum + (updates.points ?? u.points)
@@ -140,7 +158,8 @@ export default function RosterBuilder() {
           <UnitCard
             key={unit.id}
             unit={unit}
-            onUpdateWounds={handleUpdateWounds}
+            modelWounds={woundState[unit.id] || initModelWounds(unit)}
+            onUpdateModelWounds={handleUpdateModelWounds}
             onRemove={() => handleRemoveUnit(unit.id)}
             onEdit={() => setEditingUnit(unit)}
           />
