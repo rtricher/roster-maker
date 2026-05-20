@@ -15,6 +15,8 @@ export default function AddUnitForm({ onAdd, onCancel }: AddUnitFormProps) {
   const [movement, setMovement] = useState('6"')
   const [toughness, setToughness] = useState(4)
   const [save, setSave] = useState('3+')
+  const [leadership, setLeadership] = useState(6)
+  const [objectiveControl, setObjectiveControl] = useState(1)
   const [notes, setNotes] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -30,9 +32,9 @@ export default function AddUnitForm({ onAdd, onCancel }: AddUnitFormProps) {
       movement,
       toughness,
       save,
-      leadership: 6,
-      objectiveControl: 1,
-      currentWounds: count,
+      leadership,
+      objectiveControl,
+      currentWounds: count * wounds,
       notes: notes || undefined,
       abilities: [],
       weapons: [],
@@ -45,7 +47,7 @@ export default function AddUnitForm({ onAdd, onCancel }: AddUnitFormProps) {
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onCancel}>
       <form
         onSubmit={handleSubmit}
-        className="bg-surface-800 rounded-lg max-w-md w-full border border-surface-600 p-6"
+        className="bg-surface-800 rounded-lg max-w-md w-full max-h-[85vh] overflow-y-auto border border-surface-600 p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-bold text-gray-100 mb-4">Add Unit</h2>
@@ -63,7 +65,7 @@ export default function AddUnitForm({ onAdd, onCancel }: AddUnitFormProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-gray-500 uppercase">Points</label>
               <input
@@ -80,6 +82,16 @@ export default function AddUnitForm({ onAdd, onCancel }: AddUnitFormProps) {
                 value={count}
                 min={1}
                 onChange={(e) => setCount(Number(e.target.value))}
+                className="w-full mt-1 bg-surface-900 border border-surface-600 rounded px-3 py-2 text-gray-100 focus:outline-none focus:border-olive-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 uppercase">Wounds / model</label>
+              <input
+                type="number"
+                value={wounds}
+                min={1}
+                onChange={(e) => setWounds(Number(e.target.value))}
                 className="w-full mt-1 bg-surface-900 border border-surface-600 rounded px-3 py-2 text-gray-100 focus:outline-none focus:border-olive-500"
               />
             </div>
@@ -110,6 +122,27 @@ export default function AddUnitForm({ onAdd, onCancel }: AddUnitFormProps) {
                 type="text"
                 value={save}
                 onChange={(e) => setSave(e.target.value)}
+                className="w-full mt-1 bg-surface-900 border border-surface-600 rounded px-3 py-2 text-gray-100 focus:outline-none focus:border-olive-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-gray-500 uppercase">Leadership</label>
+              <input
+                type="number"
+                value={leadership}
+                onChange={(e) => setLeadership(Number(e.target.value))}
+                className="w-full mt-1 bg-surface-900 border border-surface-600 rounded px-3 py-2 text-gray-100 focus:outline-none focus:border-olive-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 uppercase">Objective Control</label>
+              <input
+                type="number"
+                value={objectiveControl}
+                onChange={(e) => setObjectiveControl(Number(e.target.value))}
                 className="w-full mt-1 bg-surface-900 border border-surface-600 rounded px-3 py-2 text-gray-100 focus:outline-none focus:border-olive-500"
               />
             </div>
