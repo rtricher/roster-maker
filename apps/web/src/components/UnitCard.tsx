@@ -8,9 +8,10 @@ interface UnitCardProps {
   unit: Unit
   onUpdateWounds: (unitId: string, newWounds: number) => void
   onRemove?: () => void
+  onEdit?: () => void
 }
 
-export default function UnitCard({ unit, onUpdateWounds, onRemove }: UnitCardProps) {
+export default function UnitCard({ unit, onUpdateWounds, onRemove, onEdit }: UnitCardProps) {
   const [statsOpen, setStatsOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -25,6 +26,12 @@ export default function UnitCard({ unit, onUpdateWounds, onRemove }: UnitCardPro
               <span className="text-amber-400 font-semibold">{unit.points} pts</span>
               <span className="text-gray-500">·</span>
               <span className="text-gray-400">{unit.count} model{unit.count !== 1 ? 's' : ''}</span>
+              {unit.wounds > 1 && (
+                <>
+                  <span className="text-gray-500">·</span>
+                  <span className="text-gray-400">{unit.wounds}W each</span>
+                </>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1 ml-2">
@@ -41,16 +48,17 @@ export default function UnitCard({ unit, onUpdateWounds, onRemove }: UnitCardPro
             <button
               onClick={() => setModalOpen(true)}
               className="px-2 py-1 rounded text-xs font-medium bg-surface-600 text-gray-400 hover:text-gray-200 transition-colors"
+              title="More details"
             >
-              More
+              ⋮
             </button>
             {onRemove && (
               <button
                 onClick={onRemove}
                 className="px-2 py-1 rounded text-xs font-medium bg-surface-600 text-gray-400 hover:text-red-400 transition-colors"
-                title="Remove unit"
+                title="Delete unit"
               >
-                ✕
+                🗑
               </button>
             )}
           </div>
@@ -73,7 +81,13 @@ export default function UnitCard({ unit, onUpdateWounds, onRemove }: UnitCardPro
       </div>
 
       {/* Detail modal */}
-      {modalOpen && <UnitDetailModal unit={unit} onClose={() => setModalOpen(false)} />}
+      {modalOpen && (
+        <UnitDetailModal
+          unit={unit}
+          onClose={() => setModalOpen(false)}
+          onEdit={onEdit}
+        />
+      )}
     </>
   )
 }
