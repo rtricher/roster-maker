@@ -3,9 +3,10 @@ import type { Unit } from '../../../../packages/shared/src/types'
 interface UnitDetailModalProps {
   unit: Unit
   onClose: () => void
+  onEdit?: () => void
 }
 
-export default function UnitDetailModal({ unit, onClose }: UnitDetailModalProps) {
+export default function UnitDetailModal({ unit, onClose, onEdit }: UnitDetailModalProps) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
@@ -18,8 +19,21 @@ export default function UnitDetailModal({ unit, onClose }: UnitDetailModalProps)
             <h2 className="text-xl font-bold text-gray-100">{unit.name}</h2>
             <span className="text-amber-400 font-semibold">{unit.points} pts</span>
             <span className="text-gray-500 ml-2">· {unit.count} model{unit.count !== 1 ? 's' : ''}</span>
+            {unit.wounds > 1 && (
+              <span className="text-gray-500 ml-2">· {unit.wounds}W each</span>
+            )}
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-200 text-2xl leading-none">&times;</button>
+          <div className="flex items-center gap-2">
+            {onEdit && (
+              <button
+                onClick={() => { onClose(); onEdit(); }}
+                className="px-3 py-1.5 rounded text-xs font-medium bg-olive-600 text-white hover:bg-olive-500 transition-colors"
+              >
+                ✎ Edit
+              </button>
+            )}
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-200 text-2xl leading-none">&times;</button>
+          </div>
         </div>
 
         <div className="p-4 space-y-4">
