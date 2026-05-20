@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { Roster, Unit } from '../../../../packages/shared/src/types'
 import { useAuth } from '../lib/AuthContext'
-import { getRosters, addUnit, removeUnit } from '../lib/rosterService'
+import { getRosters, addUnit, removeUnit, updateRoster, updateUnit } from '../lib/rosterService'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import UnitCard from '../components/UnitCard'
 import AddUnitForm from '../components/AddUnitForm'
+import EditRosterModal from '../components/EditRosterModal'
+import EditUnitModal from '../components/EditUnitModal'
 
 export default function RosterBuilder() {
   const navigate = useNavigate()
@@ -20,6 +22,8 @@ export default function RosterBuilder() {
   const [turn, setTurn] = useState(1)
   const [commandPoints, setCommandPoints] = useState(0)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showEditRoster, setShowEditRoster] = useState(false)
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
 
   useEffect(() => {
     if (authLoading) return
@@ -53,7 +57,6 @@ export default function RosterBuilder() {
     if (!rosterId) return
     const savedUnit = await addUnit(user, rosterId, unit)
     if (savedUnit) {
-      // Use the DB-generated unit (with real UUID) not the form-generated one
       setUnits((prev) => [...prev, { ...savedUnit, currentWounds: savedUnit.count }])
       if (roster) {
         setRoster({ ...roster, totalPoints: roster.totalPoints + savedUnit.points })
@@ -75,6 +78,34 @@ export default function RosterBuilder() {
     }
   }
 
+  const handleEditRoster = async (name: string, faction: string, detachment: string, maxPoints: number) => {
+    if (!rosterId || !roster) return
+    const success = await updateRoster(user, rosterId, { name, faction, detachment, maxPoints })
+    if (success) {
+      setRoster({ ...roster, name, faction, detachment, maxPoints })
+    }
+    setShowEditRoster(false)
+  }
+
+  const handleEditUnit = async (updates: Partial<Omit<Unit, 'id' | 'currentWounds'>>) => {
+    if (!rosterId || !editingUnit) return
+    const saved = await updateUnit(user, rosterId, editingUnit.id, updates)
+    if (saved) {
+      setUnits((prev) =>
+        prev.map((u) => (u.id === editingUnit.id ? { ...saved, currentWounds: u.currentWounds } : u))
+      )
+      // Recalculate points in local state
+      if (roster) {
+        const newTotal = units.reduce((sum, u) => {
+          if (u.id === editingUnit.id) return sum + (updates.points ?? u.points)
+          return sum + u.points
+        }, 0)
+        setRoster({ ...roster, totalPoints: newTotal })
+      }
+    }
+    setEditingUnit(null)
+  }
+
   const totalPoints = units.reduce((sum, u) => sum + u.points, 0)
 
   if (loading || !roster) {
@@ -94,6 +125,7 @@ export default function RosterBuilder() {
         totalPoints={totalPoints}
         maxPoints={roster.maxPoints}
         onBack={() => navigate('/')}
+        onEdit={() => setShowEditRoster(true)}
       />
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
@@ -110,6 +142,7 @@ export default function RosterBuilder() {
             unit={unit}
             onUpdateWounds={handleUpdateWounds}
             onRemove={() => handleRemoveUnit(unit.id)}
+            onEdit={() => setEditingUnit(unit)}
           />
         ))}
 
@@ -131,6 +164,25 @@ export default function RosterBuilder() {
 
       {showAddForm && (
         <AddUnitForm onAdd={handleAddUnit} onCancel={() => setShowAddForm(false)} />
+      )}
+
+      {showEditRoster && roster && (
+        <EditRosterModal
+          name={roster.name}
+          faction={roster.faction}
+          detachment={roster.detachment || ''}
+          maxPoints={roster.maxPoints}
+          onSave={handleEditRoster}
+          onCancel={() => setShowEditRoster(false)}
+        />
+      )}
+
+      {editingUnit && (
+        <EditUnitModal
+          unit={editingUnit}
+          onSave={handleEditUnit}
+          onCancel={() => setEditingUnit(null)}
+        />
       )}
     </div>
   )
