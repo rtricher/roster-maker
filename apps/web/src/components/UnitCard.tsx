@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import type { Unit } from '../../../../packages/shared/src/types'
-import LifeCounter from './LifeCounter'
+import WoundTracker from './WoundTracker'
 import StatsDropdown from './StatsDropdown'
 import UnitDetailModal from './UnitDetailModal'
 
 interface UnitCardProps {
   unit: Unit
-  onUpdateWounds: (unitId: string, newWounds: number) => void
+  /** Array of wounds remaining per model */
+  modelWounds: number[]
+  onUpdateModelWounds: (unitId: string, modelWounds: number[]) => void
   onRemove?: () => void
   onEdit?: () => void
 }
 
-export default function UnitCard({ unit, onUpdateWounds, onRemove, onEdit }: UnitCardProps) {
+export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRemove, onEdit }: UnitCardProps) {
   const [statsOpen, setStatsOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -64,15 +66,13 @@ export default function UnitCard({ unit, onUpdateWounds, onRemove, onEdit }: Uni
           </div>
         </div>
 
-        {/* Life counter */}
+        {/* Wound tracker */}
         <div className="mb-1">
-          <div className="text-[10px] text-gray-500 uppercase mb-1">
-            Models Remaining: {unit.currentWounds}/{unit.count}
-          </div>
-          <LifeCounter
-            total={unit.count}
-            current={unit.currentWounds}
-            onChange={(newValue) => onUpdateWounds(unit.id, newValue)}
+          <WoundTracker
+            modelCount={unit.count}
+            woundsPerModel={unit.wounds}
+            modelWounds={modelWounds}
+            onChange={(newWounds) => onUpdateModelWounds(unit.id, newWounds)}
           />
         </div>
 
