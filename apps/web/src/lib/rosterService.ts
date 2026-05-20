@@ -224,6 +224,56 @@ export async function addUnit(user: User | null, rosterId: string, unit: Unit): 
   return mapUnitFromDb(data)
 }
 
+/** Update an existing unit's fields */
+export async function updateUnit(
+  user: User | null,
+  rosterId: string,
+  unitId: string,
+  updates: Partial<Omit<Unit, 'id' | 'currentWounds'>>
+): Promise<Unit | null> {
+  if (!user) {
+    const rosters = loadGuestRosters()
+    const rIdx = rosters.findIndex((r) => r.id === rosterId)
+    if (rIdx === -1) return null
+    const uIdx = rosters[rIdx].units.findIndex((u) => u.id === unitId)
+    if (uIdx === -1) return null
+    rosters[rIdx].units[uIdx] = { ...rosters[rIdx].units[uIdx], ...updates }
+    rosters[rIdx].totalPoints = rosters[rIdx].units.reduce((sum, u) => sum + u.points, 0)
+    rosters[rIdx].updatedAt = new Date()
+    saveGuestRosters(rosters)
+    return rosters[rIdx].units[uIdx]
+  }
+
+  const dbUpdates: any = {}
+  if (updates.name !== undefined) dbUpdates.name = updates.name
+  if (updates.points !== undefined) dbUpdates.points = updates.points
+  if (updates.count !== undefined) dbUpdates.count = updates.count
+  if (updates.notes !== undefined) dbUpdates.notes = updates.notes || null
+  if (updates.movement !== undefined) dbUpdates.movement = updates.movement
+  if (updates.toughness !== undefined) dbUpdates.toughness = updates.toughness
+  if (updates.save !== undefined) dbUpdates.save = updates.save
+  if (updates.wounds !== undefined) dbUpdates.wounds = updates.wounds
+  if (updates.leadership !== undefined) dbUpdates.leadership = updates.leadership
+  if (updates.objectiveControl !== undefined) dbUpdates.objective_control = updates.objectiveControl
+  if (updates.abilities !== undefined) dbUpdates.abilities = updates.abilities
+  if (updates.weapons !== undefined) dbUpdates.weapons = updates.weapons
+
+  const { data, error } = await supabase
+    .from('units')
+    .update(dbUpdates)
+    .eq('id', unitId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Failed to update unit:', error)
+    return null
+  }
+
+  await recalculateRosterPoints(rosterId)
+  return mapUnitFromDb(data)
+}
+
 export async function removeUnit(user: User | null, rosterId: string, unitId: string): Promise<boolean> {
   if (!user) {
     const rosters = loadGuestRosters()
