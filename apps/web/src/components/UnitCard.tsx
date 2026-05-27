@@ -6,22 +6,35 @@ import UnitDetailModal from './UnitDetailModal'
 
 interface UnitCardProps {
   unit: Unit
-  /** Array of wounds remaining per model */
   modelWounds: number[]
   onUpdateModelWounds: (unitId: string, modelWounds: number[]) => void
   onRemove?: () => void
   onEdit?: () => void
+  onImageChange?: (unitId: string, imageUrl: string | undefined) => void
 }
 
-export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRemove, onEdit }: UnitCardProps) {
+export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRemove, onEdit, onImageChange }: UnitCardProps) {
   const [statsOpen, setStatsOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
     <>
       <div className="bg-surface-800 rounded-lg p-4 border border-surface-600 hover:border-surface-600/80 transition-colors">
-        {/* Top row: Name, points, actions */}
-        <div className="flex items-start justify-between mb-2">
+        {/* Top row: Thumbnail, Name, points, actions */}
+        <div className="flex items-start gap-3 mb-2">
+          {/* Thumbnail */}
+          {unit.imageUrl ? (
+            <img
+              src={unit.imageUrl}
+              alt={unit.name}
+              className="w-10 h-10 rounded-lg object-cover border border-surface-600 flex-shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-surface-700 border border-surface-600 flex items-center justify-center flex-shrink-0">
+              <span className="text-gray-600 text-sm">⚔</span>
+            </div>
+          )}
+
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-bold text-gray-100 truncate">{unit.name}</h3>
             <div className="flex items-center gap-2 text-sm">
@@ -36,6 +49,7 @@ export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRem
               )}
             </div>
           </div>
+
           <div className="flex items-center gap-1 ml-2">
             <button
               onClick={() => setStatsOpen(!statsOpen)}
@@ -86,6 +100,7 @@ export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRem
           unit={unit}
           onClose={() => setModalOpen(false)}
           onEdit={onEdit}
+          onImageChange={onImageChange ? (url) => onImageChange(unit.id, url) : undefined}
         />
       )}
     </>

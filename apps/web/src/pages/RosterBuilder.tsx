@@ -10,7 +10,6 @@ import AddUnitForm from '../components/AddUnitForm'
 import EditRosterModal from '../components/EditRosterModal'
 import EditUnitModal from '../components/EditUnitModal'
 
-/** Initialize wound array: each model starts at full wounds */
 function initModelWounds(unit: Unit): number[] {
   return Array.from({ length: unit.count }, () => unit.wounds)
 }
@@ -23,7 +22,6 @@ export default function RosterBuilder() {
 
   const [roster, setRoster] = useState<Roster | null>(null)
   const [units, setUnits] = useState<Unit[]>([])
-  // Per-unit wound tracking: { unitId: [woundsModel1, woundsModel2, ...] }
   const [woundState, setWoundState] = useState<Record<string, number[]>>({})
   const [loading, setLoading] = useState(true)
   const [turn, setTurn] = useState(1)
@@ -48,7 +46,6 @@ export default function RosterBuilder() {
     if (found) {
       setRoster(found)
       setUnits(found.units)
-      // Initialize wound state for all units
       const wounds: Record<string, number[]> = {}
       found.units.forEach((u) => {
         wounds[u.id] = initModelWounds(u)
@@ -109,7 +106,6 @@ export default function RosterBuilder() {
     const saved = await updateUnit(user, rosterId, editingUnit.id, updates)
     if (saved) {
       setUnits((prev) => prev.map((u) => (u.id === editingUnit.id ? saved : u)))
-      // Re-initialize wound state if model count or wounds changed
       if (updates.count !== undefined || updates.wounds !== undefined) {
         setWoundState((prev) => ({ ...prev, [editingUnit.id]: initModelWounds(saved) }))
       }
@@ -122,6 +118,14 @@ export default function RosterBuilder() {
       }
     }
     setEditingUnit(null)
+  }
+
+  const handleImageChange = async (unitId: string, imageUrl: string | undefined) => {
+    if (!rosterId) return
+    const saved = await updateUnit(user, rosterId, unitId, { imageUrl })
+    if (saved) {
+      setUnits((prev) => prev.map((u) => (u.id === unitId ? saved : u)))
+    }
   }
 
   const totalPoints = units.reduce((sum, u) => sum + u.points, 0)
@@ -162,6 +166,7 @@ export default function RosterBuilder() {
             onUpdateModelWounds={handleUpdateModelWounds}
             onRemove={() => handleRemoveUnit(unit.id)}
             onEdit={() => setEditingUnit(unit)}
+            onImageChange={handleImageChange}
           />
         ))}
 
