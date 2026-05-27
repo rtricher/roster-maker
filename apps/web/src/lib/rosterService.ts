@@ -1,8 +1,5 @@
 /**
  * Roster Service
- *
- * Logged-in users: rosters are saved to Supabase
- * Guest users: rosters are saved to localStorage (persists between visits)
  */
 
 import type { User } from '@supabase/supabase-js'
@@ -181,7 +178,6 @@ export async function updateRoster(
 
 // ── Units ───────────────────────────────────────────────────────
 
-/** Returns the saved unit with the DB-generated ID, or null on failure */
 export async function addUnit(user: User | null, rosterId: string, unit: Unit): Promise<Unit | null> {
   if (!user) {
     const rosters = loadGuestRosters()
@@ -211,6 +207,7 @@ export async function addUnit(user: User | null, rosterId: string, unit: Unit): 
       objective_control: unit.objectiveControl,
       abilities: unit.abilities,
       weapons: unit.weapons,
+      image_url: unit.imageUrl || null,
     })
     .select()
     .single()
@@ -224,7 +221,6 @@ export async function addUnit(user: User | null, rosterId: string, unit: Unit): 
   return mapUnitFromDb(data)
 }
 
-/** Update an existing unit's fields */
 export async function updateUnit(
   user: User | null,
   rosterId: string,
@@ -257,6 +253,7 @@ export async function updateUnit(
   if (updates.objectiveControl !== undefined) dbUpdates.objective_control = updates.objectiveControl
   if (updates.abilities !== undefined) dbUpdates.abilities = updates.abilities
   if (updates.weapons !== undefined) dbUpdates.weapons = updates.weapons
+  if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl || null
 
   const { data, error } = await supabase
     .from('units')
@@ -319,6 +316,7 @@ function mapUnitFromDb(u: any): Unit {
     points: u.points,
     count: u.count || 1,
     notes: u.notes || undefined,
+    imageUrl: u.image_url || undefined,
     movement: u.movement || '6"',
     toughness: u.toughness || 4,
     save: u.save || '3+',
