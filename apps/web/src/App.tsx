@@ -4,6 +4,7 @@ import RosterBuilder from './pages/RosterBuilder'
 import Home from './pages/Home'
 import GameOptions from './pages/GameOptions'
 import Auth from './pages/Auth'
+import UnitLibrary from './pages/UnitLibrary'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/builder" element={<RosterBuilder />} />
           <Route path="/game" element={<GameOptions />} />
+          <Route path="/library" element={<UnitLibrary />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
