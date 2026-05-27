@@ -28,13 +28,15 @@ export async function uploadUnitImage(
   }
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
-  return data.publicUrl
+  // Append cache-buster so browser doesn't serve stale image on replace
+  return `${data.publicUrl}?t=${Date.now()}`
 }
 
 /** Delete a unit image */
 export async function deleteUnitImage(userId: string, unitId: string, imageUrl: string): Promise<void> {
-  // Extract path from URL
-  const parts = imageUrl.split(`${BUCKET}/`)
+  // Strip query params before extracting path
+  const cleanUrl = imageUrl.split('?')[0]
+  const parts = cleanUrl.split(`${BUCKET}/`)
   if (parts.length < 2) return
   const path = parts[1]
 
