@@ -6,7 +6,7 @@ import { getRosters, addUnit, removeUnit, updateRoster, updateUnit } from '../li
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import UnitCard from '../components/UnitCard'
-import AddUnitForm from '../components/AddUnitForm'
+import AddUnitToRosterModal from '../components/AddUnitToRosterModal'
 import EditRosterModal from '../components/EditRosterModal'
 import EditUnitModal from '../components/EditUnitModal'
 
@@ -26,7 +26,7 @@ export default function RosterBuilder() {
   const [loading, setLoading] = useState(true)
   const [turn, setTurn] = useState(1)
   const [commandPoints, setCommandPoints] = useState(0)
-  const [showAddForm, setShowAddForm] = useState(false)
+  const [showAddUnit, setShowAddUnit] = useState(false)
   const [showEditRoster, setShowEditRoster] = useState(false)
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
 
@@ -71,7 +71,7 @@ export default function RosterBuilder() {
         setRoster({ ...roster, totalPoints: roster.totalPoints + savedUnit.points })
       }
     }
-    setShowAddForm(false)
+    setShowAddUnit(false)
   }
 
   const handleRemoveUnit = async (unitId: string) => {
@@ -171,7 +171,7 @@ export default function RosterBuilder() {
         ))}
 
         <button
-          onClick={() => setShowAddForm(true)}
+          onClick={() => setShowAddUnit(true)}
           className="w-full py-3 rounded-lg border-2 border-dashed border-surface-600 text-gray-500 hover:text-olive-400 hover:border-olive-500/50 transition-colors text-sm font-medium"
         >
           + Add Unit
@@ -186,8 +186,8 @@ export default function RosterBuilder() {
         onGameOptions={() => navigate('/game')}
       />
 
-      {showAddForm && (
-        <AddUnitForm onAdd={handleAddUnit} onCancel={() => setShowAddForm(false)} />
+      {showAddUnit && (
+        <AddUnitToRosterModal onAdd={handleAddUnit} onCancel={() => setShowAddUnit(false)} />
       )}
 
       {showEditRoster && roster && (
