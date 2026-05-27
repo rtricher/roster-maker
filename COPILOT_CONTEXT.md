@@ -1,7 +1,7 @@
 # Copilot Context — Roster Maker
 
 > **Purpose:** Catch up Copilot quickly on project history, decisions, and current state.
-> **Last updated:** 2026-05-20
+> **Last updated:** 2026-05-27
 
 ---
 
@@ -25,7 +25,7 @@ roster-maker/
 ├── apps/
 │   ├── web/          # Desktop roster builder (React + Vite + Tailwind)
 │   ├── mobile/       # Mobile game tracker (React + Vite + Tailwind)
-│   └── api/          # Backend API (Node.js + Express)
+│   └── api/          # Backend API (Node.js + Express) — UNUSED, Railway expiring
 ├── packages/
 │   ├── shared/       # Shared TypeScript types & utilities
 │   └── database/     # Database schemas (Supabase/PostgreSQL)
@@ -33,7 +33,7 @@ roster-maker/
 │   ├── migrations/   # SQL migration scripts
 │   └── SUPABASE_AUTH_TEMPLATES.md
 ├── vercel.json       # Vercel deploy config (web app)
-├── railway.toml      # Railway deploy config (API)
+├── railway.toml      # Railway deploy config (API) — EXPIRING/UNUSED
 ├── pnpm-workspace.yaml
 └── package.json
 ```
@@ -41,10 +41,10 @@ roster-maker/
 ## Tech Stack
 
 - **Frontend:** React 18, TypeScript, Vite, TailwindCSS
-- **Backend:** Node.js, Express (Railway) — in-memory storage, not yet wired to Supabase
 - **Database:** Supabase (PostgreSQL) — web app connects directly via `@supabase/supabase-js`
 - **Auth:** Supabase Auth (email/password with email verification)
-- **Hosting:** Vercel (web frontend), Railway (API)
+- **Storage:** Supabase Storage (`unit-images` bucket, 200kb limit)
+- **Hosting:** Vercel (web frontend)
 
 ---
 
@@ -52,16 +52,20 @@ roster-maker/
 
 | Data | Where | Why |
 |------|-------|-----|
-| User accounts & auth | Supabase | Needs a server |
-| Roster metadata (name, faction, points) | Supabase (logged in) / localStorage (guest) | Small, needs sync for logged-in users |
+| User accounts & auth | Supabase Auth | Needs a server |
+| Roster metadata (name, faction, points) | Supabase (logged in) / localStorage (guest) | Cloud sync for logged-in users |
 | Unit data in rosters (stats, weapons, abilities) | Supabase (logged in) / localStorage (guest) | User-entered, personal data |
-| Game state (turn, CP, scores, wound tracking) | localStorage / React state | Ephemeral, per-session only |
+| Unit Library (reusable unit templates) | localStorage (all users) | Quick access, no DB needed yet |
+| Unit images | Supabase Storage (logged in only) | Needs server-side hosting |
+| Game state (turn, CP, scores, wound tracking) | React state | Ephemeral, per-session only |
 
 ### Key Design Decisions
-- **No bundled unit data.** The app ships zero game content. Users enter their own units manually. This avoids copyright issues and makes the app game-agnostic.
-- **Guest mode works fully.** Users can create rosters, add units, and play games without ever signing up. Data persists in localStorage between visits.
+- **No bundled unit data.** The app ships zero game content. Users enter their own units manually.
+- **Guest mode works fully.** Users can create rosters, add units, and play games without signing up.
 - **Signed-in users get cloud sync.** Rosters saved to Supabase, accessible from any device.
-- **Max points is a soft cap** — displayed as warning (red text) when over budget, never enforced/blocked.
+- **Guest → signed-in import.** When a user signs in with existing guest data, a modal prompts to import rosters/units.
+- **Max points is a soft cap** — displayed as warning (red text) when over budget, never enforced.
+- **Unit Library is localStorage-only** (for now) — shared between guest and signed-in states.
 - **Future paywall hook:** Limit free users to N rosters, paid users get unlimited.
 
 ---
@@ -86,7 +90,7 @@ roster-maker/
 - Supabase Auth (email/password + verification)
 - `AuthContext.tsx` with `useAuth()` hook
 - `Auth.tsx` page (login/signup/guest mode)
-- `rosterService.ts` — unified Supabase/localStorage service: `getRosters`, `createRoster`, `deleteRoster`, `updateRoster`, `addUnit`, `removeUnit`
+- `rosterService.ts` — unified Supabase/localStorage service
 - `CreateRosterModal.tsx`
 - Home page: real data loading, create/delete, auth-aware header
 - Database migrations: unit stat columns, auth trigger for `public.users`
@@ -97,31 +101,51 @@ roster-maker/
 ## What Was Built (Session 3 — 2026-05-20)
 
 ### Edit Roster & Edit Unit — ✅ DEPLOYED
-- **`EditRosterModal.tsx`** — edit name, faction, detachment, max points
-- **`EditUnitModal.tsx`** — edit all unit fields (name, points, models, wounds/model, M/T/SV/W/LD/OC, notes)
-- **`rosterService.ts`** — added `updateUnit()` function
-- **`Header.tsx`** — added ✎ edit button next to roster name, "Over budget" warning text
-- **`UnitDetailModal.tsx`** — added ✎ Edit button in header, shows wounds per model
-- **`RosterBuilder.tsx`** — wired up edit roster + edit unit flows
+- `EditRosterModal.tsx`, `EditUnitModal.tsx`
+- `rosterService.ts` — added `updateUnit()`
+- `Header.tsx` — ✎ edit button, "Over budget" warning
+- `UnitDetailModal.tsx` — ✎ Edit button, wounds per model display
 
 ### UI Consistency — ✅ DEPLOYED
-- **"More" button → `⋮`** (vertical ellipsis) on UnitCard
-- **Delete button → `🗑`** everywhere (UnitCard + Home page roster cards)
+- `⋮` for more/details, `🗑` for delete, `✎` for edit everywhere
 
 ### Wound Tracking Overhaul — ✅ DEPLOYED
-- **`WoundTracker.tsx`** — smart component that adapts based on unit profile:
-  - **Multi-model, 1W each** (e.g., 10 Intercessors): Model pips (green = alive, empty = dead)
-  - **Single model, many wounds** (e.g., 1 Dreadnought 12W): Wound pips (click to damage)
-  - **Multi-model, many wounds** (e.g., 3 Aggressors 3W each): Per-model wound rows
-- **`UnitCard.tsx`** uses `WoundTracker` instead of old `LifeCounter`
-- **`RosterBuilder.tsx`** — wound state is `Record<string, number[]>` (per-model wound arrays)
-- **`AddUnitForm.tsx`** synced with EditUnitModal — includes wounds/model, leadership, OC fields
+- `WoundTracker.tsx` — adapts: model pips / wound pips / per-model wound rows
+- `UnitCard.tsx` uses `WoundTracker`, wound state is `Record<string, number[]>`
 
-### Unit Library & Image Upload — 🚧 IN PROGRESS (on branch, not merged)
-- **`UnitLibrary.tsx`** — uploaded to branch
-- **`storageService.ts`** — uploaded to branch
-- **`UnitDetailModal.tsx`** — needs update for image upload support (was being worked on when session ended)
-- Still needed: wiring image upload into UnitDetailModal, thumbnail on UnitCard
+---
+
+## What Was Built (Session 4 — 2026-05-27)
+
+### Unit Images & Storage — ✅ DEPLOYED
+- **`storageService.ts`** — Supabase Storage upload/delete with cache-busting (`?t=timestamp`)
+- **`UnitDetailModal.tsx`** — image upload/replace/remove UI
+- **`UnitCard.tsx`** — 40x40 thumbnail on left side of card
+- **`AddUnitForm.tsx`** — image upload at creation time (signed-in users)
+- **`EditUnitModal.tsx`** — image upload/replace/remove in edit flow
+- **`types.ts`** — added `imageUrl?: string` to `Unit` interface
+- **`rosterService.ts`** — `image_url` mapped in addUnit/updateUnit/mapUnitFromDb
+- **Migration `004_add_image_url.sql`** — `ALTER TABLE units ADD COLUMN image_url TEXT`
+- **Supabase Storage bucket** `unit-images`: public, 200kb limit, RLS policies for INSERT/UPDATE/DELETE
+
+### Tabbed Home Page — ✅ DEPLOYED
+- **"Your Rosters"** tab (existing roster list)
+- **"Your Units"** tab (unit library — create, edit, delete units with thumbnails)
+- Unit Library page (`UnitLibrary.tsx`) removed — functionality merged into Home tabs
+
+### Add Unit to Roster Flow — ✅ DEPLOYED
+- **`AddUnitToRosterModal.tsx`** — "From Library" picker + "Create New" option
+- Creating a new unit in a roster auto-saves to unit library
+- Picking from library clones the unit (including imageUrl) into the roster
+
+### Guest → Account Import — ✅ DEPLOYED
+- **`ImportGuestDataModal.tsx`** — prompts on sign-in when guest data exists
+- **`guestImport.ts`** — imports guest rosters (with units) to Supabase, merges unit library
+- Checkbox selection: import rosters, units, or both
+- Clears guest localStorage after import, stores dismissed flag
+
+### Railway
+- **Railway trial expiring** — confirmed the API is completely unused. Web app talks directly to Supabase. Let it expire.
 
 ---
 
@@ -129,18 +153,15 @@ roster-maker/
 
 ### Web App → Vercel
 - **Root Directory:** Blank (repo root) — `vercel.json` handles pathing
-- **vercel.json:** `npm install --legacy-peer-deps` (pnpm has `ERR_INVALID_THIS` on Vercel)
+- **vercel.json:** `npm install --legacy-peer-deps`
 - **Build:** `cd apps/web && npx vite build`
 - **Output:** `apps/web/dist`
-- **Env vars:** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` set in Vercel dashboard
+- **Env vars:** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
 - **Auto-deploys** on push to `main`
 - **Status: ✅ DEPLOYED AND WORKING**
 
-### API → Railway
-- **railway.toml** in repo root
-- Build: `cd apps/api && npm install && npx tsc`
-- Start: `cd apps/api && node dist/server.js`
-- **Status: ⚠️ Deployed, not fully verified**
+### API → Railway — ⚠️ EXPIRING / UNUSED
+- Not needed. Can be removed from repo eventually.
 
 ### Mobile App → Not deployed yet
 
@@ -150,10 +171,12 @@ roster-maker/
 
 - **Project URL:** `https://nxzyaseddqefjfmxxsix.supabase.co`
 - **Tables:** `users`, `rosters`, `units`, `game_stats`
-- **Unit columns:** `id`, `roster_id`, `name`, `points`, `count`, `notes`, `movement`, `toughness`, `save`, `wounds`, `leadership`, `objective_control`, `abilities` (JSONB), `weapons` (JSONB)
+- **Unit columns:** `id`, `roster_id`, `name`, `points`, `count`, `notes`, `movement`, `toughness`, `save`, `wounds`, `leadership`, `objective_control`, `abilities` (JSONB), `weapons` (JSONB), `image_url` (TEXT)
 - **RLS:** Enabled on `rosters`, `units`, `game_stats`
-- **Auth:** Email provider, email verification on
+- **Auth:** Email provider, email verification on, sessions auto-refresh (7 day JWT)
 - **Trigger:** `on_auth_user_created` → auto-creates `public.users` row
+- **Storage:** `unit-images` bucket (public, 200kb limit)
+  - Policies: INSERT (own folder), UPDATE (own folder), DELETE (own folder), SELECT (all)
 - **Web app connects directly** to Supabase (RLS protects data)
 
 ---
@@ -161,16 +184,24 @@ roster-maker/
 ## Current Component Architecture
 
 ```
+Home.tsx (tabbed)
+├── Tab: "Your Rosters" — roster list, create/delete
+├── Tab: "Your Units" — unit library, create/edit/delete with thumbnails
+├── CreateRosterModal.tsx
+├── AddUnitForm.tsx (with image upload)
+├── EditUnitModal.tsx (with image upload/replace/remove)
+└── ImportGuestDataModal.tsx (shown on sign-in if guest data exists)
+
 RosterBuilder.tsx
 ├── Header.tsx (sticky top — roster name ✎, faction, points/max)
-├── UnitCard.tsx (per unit)
+├── UnitCard.tsx (per unit, with thumbnail)
 │   ├── WoundTracker.tsx (adapts to model/wound profile)
 │   ├── StatsDropdown.tsx (expandable M/T/SV/W/LD/OC + weapons table)
-│   └── UnitDetailModal.tsx (full detail overlay with ✎ Edit button)
+│   └── UnitDetailModal.tsx (full detail with image upload/replace/remove, ✎ Edit)
 ├── Footer.tsx (sticky bottom — Game Options, Turn counter, CP counter)
-├── AddUnitForm.tsx (modal — all fields including wounds/model)
-├── EditRosterModal.tsx (modal — name, faction, detachment, max points)
-└── EditUnitModal.tsx (modal — all unit fields)
+├── AddUnitToRosterModal.tsx ("From Library" picker + "Create New")
+├── EditRosterModal.tsx (name, faction, detachment, max points)
+└── EditUnitModal.tsx (all unit fields + image)
 ```
 
 ---
@@ -182,7 +213,9 @@ RosterBuilder.tsx
 3. **`LifeCounter.tsx`** — deprecated, replaced by `WoundTracker.tsx`, should be deleted
 4. **No `pnpm-lock.yaml`** committed — Vercel uses npm workaround
 5. **Mobile app not deployed**
-6. **Railway API unused** — web app talks directly to Supabase
+6. **Railway API unused** — can remove `apps/api/` and `railway.toml` eventually
+7. **Unit Library is localStorage-only** — doesn't sync across devices for signed-in users (future improvement)
+8. **Image replace** — requires UPDATE policy on Supabase Storage (was just added this session)
 
 ---
 
@@ -198,18 +231,22 @@ RosterBuilder.tsx
 - **Smart wound tracking** — adapts UI based on models × wounds profile
 - **Max points = soft cap** — shows red warning, never blocks
 - **Icon consistency** — `⋮` for more/details, `🗑` for delete, `✎` for edit
+- **Image cache-busting** — `?t=timestamp` appended to image URLs after replace
+- **Unit Library = reusable templates** — creating units in roster auto-saves to library
+- **Guest import on sign-in** — non-intrusive modal, dismissable, remembers choice
 
 ---
 
 ## What to Build Next (Priority Order)
 
-1. **Finish Unit Library + Image Upload** — complete the in-progress branch (UnitDetailModal image support, thumbnail on UnitCard)
-2. **Deploy mobile app** to Vercel as second project
-3. **Game Options page** — mission selection, scoring, battle log
-4. **Export roster** (JSON, PDF, shareable link)
-5. **Roster limits / paywall** — free users get N rosters, paid get unlimited
-6. **Guest → account migration** — migrate localStorage rosters to Supabase on signup
-7. **Clean up** — remove stray root files, deprecated components, unused mock data
+1. **Superuser dashboard** — admin page for app control, user management (when needed)
+2. **Session timeout configuration** — currently 7-day auto-refresh, may want shorter
+3. **Deploy mobile app** to Vercel as second project
+4. **Game Options page** — mission selection, scoring, battle log
+5. **Export roster** (JSON, PDF, shareable link)
+6. **Roster limits / paywall** — free users get N rosters, paid get unlimited
+7. **Sync Unit Library to Supabase** — so it persists across devices for signed-in users
+8. **Clean up** — remove stray root files, deprecated components, unused API code
 
 ---
 
@@ -249,3 +286,5 @@ git push -u origin feat/branch-name
 - `addUnit()` returns saved unit with DB UUID — always use returned unit in React state
 - Wound tracking state is `Record<string, number[]>` — array of wounds per model, keyed by unit ID
 - When providing updated files, always provide the **complete file** not just diffs
+- Image URLs use cache-busting: `?t=timestamp` — `deleteUnitImage` strips query params before extracting path
+- Supabase Storage policies needed: INSERT, UPDATE, DELETE, SELECT on `unit-images` bucket
