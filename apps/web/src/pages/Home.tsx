@@ -4,9 +4,11 @@ import type { Roster, Unit } from '../../../../packages/shared/src/types'
 import { useAuth } from '../lib/AuthContext'
 import { getRosters, createRoster, deleteRoster } from '../lib/rosterService'
 import { loadUnitLibrary, saveUnitLibrary, removeFromUnitLibrary } from '../lib/storage'
+import { hasGuestData, wasImportDismissed, dismissImport, importGuestRosters, clearGuestData } from '../lib/guestImport'
 import CreateRosterModal from '../components/CreateRosterModal'
 import AddUnitForm from '../components/AddUnitForm'
 import EditUnitModal from '../components/EditUnitModal'
+import ImportGuestDataModal from '../components/ImportGuestDataModal'
 
 type Tab = 'rosters' | 'units'
 
@@ -26,10 +28,23 @@ export default function Home() {
   const [showAddUnit, setShowAddUnit] = useState(false)
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
 
+  // Import state
+  const [showImport, setShowImport] = useState(false)
+  const [guestCounts, setGuestCounts] = useState({ rosterCount: 0, unitCount: 0 })
+
   useEffect(() => {
     if (authLoading) return
     loadRosters()
     setUnits(loadUnitLibrary())
+
+    // Check for guest data to import when signed in
+    if (user && !wasImportDismissed()) {
+      const counts = hasGuestData()
+      if (counts.rosterCount > 0 || counts.unitCount > 0) {
+        setGuestCounts(counts)
+        setShowImport(true)
+      }
+    }
   }, [user, authLoading])
 
   const loadRosters = async () => {
@@ -37,6 +52,31 @@ export default function Home() {
     const data = await getRosters(user)
     setRosters(data)
     setLoadingRosters(false)
+  }
+
+  // ── Import handlers ──
+  const handleImport = async (options: { rosters: boolean; units: boolean }) => {
+    if (!user) return
+
+    if (options.rosters) {
+      await importGuestRosters(user)
+      // Reload rosters to show imported ones
+      const data = await getRosters(user)
+      setRosters(data)
+    }
+
+    if (options.rosters && !options.units) {
+      // Only clear rosters, keep unit library
+      clearGuestData()
+    }
+
+    dismissImport()
+    setShowImport(false)
+  }
+
+  const handleSkipImport = () => {
+    dismissImport()
+    setShowImport(false)
   }
 
   // ── Roster handlers ──
@@ -235,7 +275,6 @@ export default function Home() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      {/* Thumbnail */}
                       {unit.imageUrl ? (
                         <img
                           src={unit.imageUrl}
@@ -306,6 +345,15 @@ export default function Home() {
           unit={editingUnit}
           onSave={handleEditUnit}
           onCancel={() => setEditingUnit(null)}
+        />
+      )}
+
+      {showImport && (
+        <ImportGuestDataModal
+          guestRosterCount={guestCounts.rosterCount}
+          guestUnitCount={guestCounts.unitCount}
+          onImport={handleImport}
+          onSkip={handleSkipImport}
         />
       )}
     </div>
