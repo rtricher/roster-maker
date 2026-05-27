@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { Unit } from '../../../../packages/shared/src/types'
+import { useAuth } from '../lib/AuthContext'
+import { uploadUnitImage, deleteUnitImage } from '../lib/storageService'
 
 interface EditUnitModalProps {
   unit: Unit
@@ -8,6 +10,9 @@ interface EditUnitModalProps {
 }
 
 export default function EditUnitModal({ unit, onSave, onCancel }: EditUnitModalProps) {
+  const { user } = useAuth()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [name, setName] = useState(unit.name)
   const [points, setPoints] = useState(unit.points)
   const [count, setCount] = useState(unit.count)
@@ -18,10 +23,43 @@ export default function EditUnitModal({ unit, onSave, onCancel }: EditUnitModalP
   const [leadership, setLeadership] = useState(unit.leadership)
   const [objectiveControl, setObjectiveControl] = useState(unit.objectiveControl)
   const [notes, setNotes] = useState(unit.notes || '')
+  const [imageUrl, setImageUrl] = useState<string | undefined>(unit.imageUrl)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFile(file)
+    const reader = new FileReader()
+    reader.onload = (ev) => setImagePreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveImage = async () => {
+    if (imageUrl && user) {
+      await deleteUnitImage(user.id, unit.id, imageUrl)
+    }
+    setImageUrl(undefined)
+    setImageFile(null)
+    setImagePreview(null)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
+    setUploading(true)
+
+    let finalImageUrl = imageUrl
+
+    // Upload new image if selected
+    if (imageFile && user) {
+      const url = await uploadUnitImage(user.id, unit.id, imageFile)
+      if (url) finalImageUrl = url
+    }
+
+    setUploading(false)
     onSave({
       name: name.trim(),
       points,
@@ -33,8 +71,11 @@ export default function EditUnitModal({ unit, onSave, onCancel }: EditUnitModalP
       leadership,
       objectiveControl,
       notes: notes || undefined,
+      imageUrl: finalImageUrl,
     })
   }
+
+  const displayImage = imagePreview || imageUrl
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onCancel}>
@@ -46,6 +87,60 @@ export default function EditUnitModal({ unit, onSave, onCancel }: EditUnitModalP
         <h2 className="text-lg font-bold text-gray-100 mb-4">Edit Unit</h2>
 
         <div className="space-y-3">
+          {/* Image */}
+          <div>
+            <label className="text-xs text-gray-500 uppercase">Unit Image</label>
+            {displayImage ? (
+              <div className="relative mt-1">
+                <img
+                  src={displayImage}
+                  alt={name}
+                  className="w-full h-32 object-cover rounded-lg border border-surface-600"
+                />
+                <div className="absolute top-2 right-2 flex gap-1">
+                  {user && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-2 py-1 rounded text-xs bg-surface-800/80 text-gray-300 hover:text-white transition-colors"
+                    >
+                      Replace
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="px-2 py-1 rounded text-xs bg-surface-800/80 text-gray-300 hover:text-red-400 transition-colors"
+                  >
+                    🗑
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => user ? fileInputRef.current?.click() : null}
+                className={`w-full mt-1 h-20 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors ${
+                  user
+                    ? 'border-surface-600 text-gray-500 hover:text-olive-400 hover:border-olive-500/50 cursor-pointer'
+                    : 'border-surface-700 text-gray-600 cursor-not-allowed'
+                }`}
+              >
+                <span className="text-lg">📷</span>
+                <span className="text-[10px]">
+                  {user ? 'Click to add image' : 'Sign in to upload images'}
+                </span>
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageSelect}
+            />
+          </div>
+
           <div>
             <label className="text-xs text-gray-500 uppercase">Unit Name *</label>
             <input
@@ -157,10 +252,10 @@ export default function EditUnitModal({ unit, onSave, onCancel }: EditUnitModalP
           </button>
           <button
             type="submit"
-            disabled={!name.trim()}
+            disabled={!name.trim() || uploading}
             className="px-4 py-2 rounded text-sm font-medium bg-olive-500 text-white hover:bg-olive-600 disabled:opacity-40 transition-colors"
           >
-            Save Changes
+            {uploading ? 'Uploading...' : 'Save Changes'}
           </button>
         </div>
       </form>
