@@ -15,12 +15,12 @@ export default function AddUnitToRosterModal({ onAdd, onCancel }: AddUnitToRoste
   const [library] = useState<Unit[]>(loadUnitLibrary())
 
   const handlePickUnit = (unit: Unit) => {
-    // Clone the unit with fresh currentWounds for the roster instance
-    onAdd({ ...unit, currentWounds: unit.count * unit.wounds })
+    // Clone the unit — imageUrl comes along from the library
+    onAdd({ ...unit, id: crypto.randomUUID(), currentWounds: unit.count * unit.wounds })
   }
 
   const handleCreateNew = (unit: Unit) => {
-    // Save to library too
+    // Save to library (with image if uploaded)
     const savedUnit = { ...unit, id: crypto.randomUUID() }
     const updatedLibrary = [...loadUnitLibrary(), savedUnit]
     saveUnitLibrary(updatedLibrary)
