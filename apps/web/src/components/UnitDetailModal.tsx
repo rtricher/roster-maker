@@ -1,12 +1,40 @@
+import { useState, useRef } from 'react'
 import type { Unit } from '../../../../packages/shared/src/types'
+import { useAuth } from '../lib/AuthContext'
+import { uploadUnitImage, deleteUnitImage } from '../lib/storageService'
 
 interface UnitDetailModalProps {
   unit: Unit
   onClose: () => void
   onEdit?: () => void
+  onImageChange?: (imageUrl: string | undefined) => void
 }
 
-export default function UnitDetailModal({ unit, onClose, onEdit }: UnitDetailModalProps) {
+export default function UnitDetailModal({ unit, onClose, onEdit, onImageChange }: UnitDetailModalProps) {
+  const { user } = useAuth()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+
+    setUploading(true)
+    const url = await uploadUnitImage(user.id, unit.id, file)
+    if (url && onImageChange) {
+      onImageChange(url)
+    }
+    setUploading(false)
+  }
+
+  const handleRemoveImage = async () => {
+    if (!user || !unit.imageUrl) return
+    await deleteUnitImage(user.id, unit.id, unit.imageUrl)
+    if (onImageChange) {
+      onImageChange(undefined)
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
@@ -37,6 +65,57 @@ export default function UnitDetailModal({ unit, onClose, onEdit }: UnitDetailMod
         </div>
 
         <div className="p-4 space-y-4">
+          {/* Unit Image */}
+          <div>
+            <h3 className="text-xs text-gray-500 uppercase mb-2">Unit Image</h3>
+            {unit.imageUrl ? (
+              <div className="relative">
+                <img
+                  src={unit.imageUrl}
+                  alt={unit.name}
+                  className="w-full max-h-48 object-cover rounded-lg border border-surface-600"
+                />
+                {user && (
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-2 py-1 rounded text-xs bg-surface-800/80 text-gray-300 hover:text-white transition-colors"
+                    >
+                      Replace
+                    </button>
+                    <button
+                      onClick={handleRemoveImage}
+                      className="px-2 py-1 rounded text-xs bg-surface-800/80 text-gray-300 hover:text-red-400 transition-colors"
+                    >
+                      🗑
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => user ? fileInputRef.current?.click() : null}
+                className={`w-full h-32 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors ${
+                  user
+                    ? 'border-surface-600 text-gray-500 hover:text-olive-400 hover:border-olive-500/50 cursor-pointer'
+                    : 'border-surface-700 text-gray-600 cursor-not-allowed'
+                }`}
+              >
+                <span className="text-2xl">📷</span>
+                <span className="text-xs">
+                  {user ? (uploading ? 'Uploading...' : 'Click to upload an image') : 'Sign in to upload images'}
+                </span>
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+          </div>
+
           {/* Stats Grid */}
           <div>
             <h3 className="text-xs text-gray-500 uppercase mb-2">Characteristics</h3>
