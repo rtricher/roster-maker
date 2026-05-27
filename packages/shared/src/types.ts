@@ -8,6 +8,7 @@ export interface Unit {
   points: number
   count: number
   notes?: string
+  imageUrl?: string
   // Stats
   movement: string
   toughness: number
