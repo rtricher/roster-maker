@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Roster, Unit } from '../../../../packages/shared/src/types'
 import { useAuth } from '../lib/AuthContext'
 import { getRosters, createRoster, deleteRoster } from '../lib/rosterService'
 import { loadUnitLibrary, saveUnitLibrary, removeFromUnitLibrary } from '../lib/storage'
 import { hasGuestData, wasImportDismissed, dismissImport, importGuestRosters, clearGuestData } from '../lib/guestImport'
+import { uploadUnitImage } from '../lib/storageService'
 import CreateRosterModal from '../components/CreateRosterModal'
 import AddUnitForm from '../components/AddUnitForm'
 import EditUnitModal from '../components/EditUnitModal'
@@ -15,6 +16,8 @@ type Tab = 'rosters' | 'units'
 export default function Home() {
   const navigate = useNavigate()
   const { user, loading: authLoading, signOut } = useAuth()
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const [imageTargetUnit, setImageTargetUnit] = useState<string | null>(null)
 
   const [tab, setTab] = useState<Tab>('rosters')
 
@@ -37,7 +40,6 @@ export default function Home() {
     loadRosters()
     setUnits(loadUnitLibrary())
 
-    // Check for guest data to import when signed in
     if (user && !wasImportDismissed()) {
       const counts = hasGuestData()
       if (counts.rosterCount > 0 || counts.unitCount > 0) {
@@ -57,19 +59,14 @@ export default function Home() {
   // ── Import handlers ──
   const handleImport = async (options: { rosters: boolean; units: boolean }) => {
     if (!user) return
-
     if (options.rosters) {
       await importGuestRosters(user)
-      // Reload rosters to show imported ones
       const data = await getRosters(user)
       setRosters(data)
     }
-
     if (options.rosters && !options.units) {
-      // Only clear rosters, keep unit library
       clearGuestData()
     }
-
     dismissImport()
     setShowImport(false)
   }
@@ -116,10 +113,35 @@ export default function Home() {
     setEditingUnit(null)
   }
 
-  const handleDeleteUnit = (unitId: string) => {
+  const handleDeleteUnit = (e: React.MouseEvent, unitId: string) => {
+    e.stopPropagation()
     if (!confirm('Remove this unit from your library?')) return
     removeFromUnitLibrary(unitId)
     setUnits((prev) => prev.filter((u) => u.id !== unitId))
+  }
+
+  const handleThumbnailClick = (e: React.MouseEvent, unitId: string) => {
+    e.stopPropagation()
+    if (!user) return
+    setImageTargetUnit(unitId)
+    imageInputRef.current?.click()
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user || !imageTargetUnit) return
+
+    const url = await uploadUnitImage(user.id, imageTargetUnit, file)
+    if (url) {
+      const updated = units.map((u) =>
+        u.id === imageTargetUnit ? { ...u, imageUrl: url } : u
+      )
+      setUnits(updated)
+      saveUnitLibrary(updated)
+    }
+    setImageTargetUnit(null)
+    // Reset input so same file can be selected again
+    e.target.value = ''
   }
 
   return (
@@ -275,17 +297,32 @@ export default function Home() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      {unit.imageUrl ? (
-                        <img
-                          src={unit.imageUrl}
-                          alt={unit.name}
-                          className="w-12 h-12 rounded-lg object-cover border border-surface-600 flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-surface-700 border border-surface-600 flex items-center justify-center flex-shrink-0">
-                          <span className="text-gray-600 text-lg">⚔</span>
-                        </div>
-                      )}
+                      {/* Tappable thumbnail — click to upload */}
+                      <button
+                        onClick={(e) => handleThumbnailClick(e, unit.id)}
+                        className="flex-shrink-0 group relative"
+                        title={user ? 'Click to upload image' : 'Sign in to upload images'}
+                      >
+                        {unit.imageUrl ? (
+                          <img
+                            src={unit.imageUrl}
+                            alt={unit.name}
+                            className="w-12 h-12 rounded-lg object-cover border border-surface-600 group-hover:border-olive-500 transition-colors"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-surface-700 border border-surface-600 group-hover:border-olive-500 flex items-center justify-center transition-colors">
+                            <span className="text-gray-600 group-hover:text-olive-400 text-lg transition-colors">
+                              {user ? '📷' : '⚔'}
+                            </span>
+                          </div>
+                        )}
+                        {user && (
+                          <div className="absolute inset-0 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <span className="text-white text-[10px]">📷</span>
+                          </div>
+                        )}
+                      </button>
+
                       <div className="min-w-0">
                         <h3 className="font-bold text-gray-100 truncate">{unit.name}</h3>
                         <div className="flex items-center gap-2 text-sm">
@@ -313,7 +350,7 @@ export default function Home() {
                         ✎
                       </button>
                       <button
-                        onClick={() => handleDeleteUnit(unit.id)}
+                        onClick={(e) => handleDeleteUnit(e, unit.id)}
                         className="px-2 py-1 rounded text-xs font-medium bg-surface-600 text-gray-400 hover:text-red-400 transition-colors"
                         title="Delete unit"
                       >
@@ -327,6 +364,15 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* Hidden file input for thumbnail uploads */}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageUpload}
+      />
 
       {/* Modals */}
       {showCreateModal && (
