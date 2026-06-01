@@ -30,6 +30,7 @@ export default function Home() {
   const [units, setUnits] = useState<Unit[]>([])
   const [showAddUnit, setShowAddUnit] = useState(false)
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
+  const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null)
 
   // Import state
   const [showImport, setShowImport] = useState(false)
@@ -140,7 +141,6 @@ export default function Home() {
       saveUnitLibrary(updated)
     }
     setImageTargetUnit(null)
-    // Reset input so same file can be selected again
     e.target.value = ''
   }
 
@@ -290,76 +290,147 @@ export default function Home() {
                 </p>
               </div>
             ) : (
-              units.map((unit) => (
-                <div
-                  key={unit.id}
-                  className="bg-surface-800 border border-surface-600 rounded-lg p-4"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                      {/* Tappable thumbnail — click to upload */}
-                      <button
-                        onClick={(e) => handleThumbnailClick(e, unit.id)}
-                        className="flex-shrink-0 group relative"
-                        title={user ? 'Click to upload image' : 'Sign in to upload images'}
-                      >
-                        {unit.imageUrl ? (
-                          <img
-                            src={unit.imageUrl}
-                            alt={unit.name}
-                            className="w-12 h-12 rounded-lg object-cover border border-surface-600 group-hover:border-olive-500 transition-colors"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-lg bg-surface-700 border border-surface-600 group-hover:border-olive-500 flex items-center justify-center transition-colors">
-                            <span className="text-gray-600 group-hover:text-olive-400 text-lg transition-colors">
-                              {user ? '📷' : '⚔'}
-                            </span>
-                          </div>
-                        )}
-                        {user && (
-                          <div className="absolute inset-0 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                            <span className="text-white text-[10px]">📷</span>
-                          </div>
-                        )}
-                      </button>
+              units.map((unit) => {
+                const isExpanded = expandedUnitId === unit.id
+                return (
+                  <div
+                    key={unit.id}
+                    className="bg-surface-800 border border-surface-600 rounded-lg"
+                  >
+                    {/* Tappable header */}
+                    <div
+                      className="p-4 cursor-pointer"
+                      onClick={() => setExpandedUnitId(isExpanded ? null : unit.id)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          {/* Tappable thumbnail */}
+                          <button
+                            onClick={(e) => handleThumbnailClick(e, unit.id)}
+                            className="flex-shrink-0 group relative"
+                            title={user ? 'Click to upload image' : 'Sign in to upload images'}
+                          >
+                            {unit.imageUrl ? (
+                              <img
+                                src={unit.imageUrl}
+                                alt={unit.name}
+                                className="w-12 h-12 rounded-lg object-cover border border-surface-600 group-hover:border-olive-500 transition-colors"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-lg bg-surface-700 border border-surface-600 group-hover:border-olive-500 flex items-center justify-center transition-colors">
+                                <span className="text-gray-600 group-hover:text-olive-400 text-lg transition-colors">
+                                  {user ? '📷' : '⚔'}
+                                </span>
+                              </div>
+                            )}
+                            {user && (
+                              <div className="absolute inset-0 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                <span className="text-white text-[10px]">📷</span>
+                              </div>
+                            )}
+                          </button>
 
-                      <div className="min-w-0">
-                        <h3 className="font-bold text-gray-100 truncate">{unit.name}</h3>
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className="text-amber-400 font-semibold">{unit.points} pts</span>
-                          <span className="text-gray-500">·</span>
-                          <span className="text-gray-400">{unit.count} model{unit.count !== 1 ? 's' : ''}</span>
-                          {unit.wounds > 1 && (
-                            <>
+                          <div className="min-w-0">
+                            <h3 className="font-bold text-gray-100 truncate">{unit.name}</h3>
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-amber-400 font-semibold">{unit.points} pts</span>
                               <span className="text-gray-500">·</span>
-                              <span className="text-gray-400">{unit.wounds}W</span>
-                            </>
-                          )}
+                              <span className="text-gray-400">{unit.count} model{unit.count !== 1 ? 's' : ''}</span>
+                              {unit.wounds > 1 && (
+                                <>
+                                  <span className="text-gray-500">·</span>
+                                  <span className="text-gray-400">{unit.wounds}W</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        {unit.notes && (
-                          <p className="text-xs text-gray-500 mt-1 truncate">{unit.notes}</p>
-                        )}
+                        <div className="flex items-center gap-1 ml-2" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => setEditingUnit(unit)}
+                            className="px-2 py-1 rounded text-xs font-medium bg-surface-600 text-gray-400 hover:text-gray-200 transition-colors"
+                            title="Edit unit"
+                          >
+                            ✎
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteUnit(e, unit.id)}
+                            className="px-2 py-1 rounded text-xs font-medium bg-surface-600 text-gray-400 hover:text-red-400 transition-colors"
+                            title="Delete unit"
+                          >
+                            🗑
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Expand indicator */}
+                      <div className="flex justify-center mt-2">
+                        <span className="text-[10px] text-gray-600">{isExpanded ? '▲' : '▼'}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 ml-2">
-                      <button
-                        onClick={() => setEditingUnit(unit)}
-                        className="px-2 py-1 rounded text-xs font-medium bg-surface-600 text-gray-400 hover:text-gray-200 transition-colors"
-                        title="Edit unit"
-                      >
-                        ✎
-                      </button>
-                      <button
-                        onClick={(e) => handleDeleteUnit(e, unit.id)}
-                        className="px-2 py-1 rounded text-xs font-medium bg-surface-600 text-gray-400 hover:text-red-400 transition-colors"
-                        title="Delete unit"
-                      >
-                        🗑
-                      </button>
-                    </div>
+
+                    {/* Expanded details */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 space-y-3 border-t border-surface-700 pt-3">
+                        {/* Stats line */}
+                        <div className="flex items-center gap-1 overflow-x-auto">
+                          {[
+                            { label: 'M', value: unit.movement },
+                            { label: 'T', value: unit.toughness },
+                            { label: 'SV', value: unit.save },
+                            { label: 'W', value: unit.wounds },
+                            { label: 'LD', value: unit.leadership },
+                            { label: 'OC', value: unit.objectiveControl },
+                          ].map((stat) => (
+                            <div key={stat.label} className="bg-surface-900 rounded px-2 py-1 text-center flex-shrink-0">
+                              <div className="text-[9px] text-gray-500 uppercase leading-tight">{stat.label}</div>
+                              <div className="text-sm font-bold text-gray-200 leading-tight">{stat.value}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Abilities */}
+                        {unit.abilities.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {unit.abilities.map((ability) => (
+                              <span key={ability} className="text-[11px] bg-olive-600/30 text-olive-400 px-2 py-0.5 rounded">
+                                {ability}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Weapons */}
+                        {unit.weapons.length > 0 && (
+                          <div className="space-y-1">
+                            {unit.weapons.map((weapon, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-xs">
+                                <span className={`px-1 py-0.5 rounded text-[9px] ${
+                                  weapon.type === 'ranged' ? 'bg-blue-900/40 text-blue-400' : 'bg-red-900/40 text-red-400'
+                                }`}>
+                                  {weapon.type === 'ranged' ? 'R' : 'M'}
+                                </span>
+                                <span className="text-gray-200 font-medium">{weapon.name}</span>
+                                <span className="text-gray-500 text-[10px]">
+                                  {weapon.range} · A:{weapon.attacks} · S:{weapon.strength} · AP:{weapon.ap} · D:{weapon.damage}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Notes */}
+                        {unit.notes && (
+                          <div className="bg-surface-900 rounded p-2">
+                            <span className="text-[10px] text-gray-500 uppercase">Notes: </span>
+                            <span className="text-xs text-gray-300">{unit.notes}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         )}
