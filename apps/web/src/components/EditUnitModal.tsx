@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react'
-import type { Unit } from '../../../../packages/shared/src/types'
+import type { Unit, Weapon } from '../../../../packages/shared/src/types'
 import { useAuth } from '../lib/AuthContext'
 import { uploadUnitImage, deleteUnitImage } from '../lib/storageService'
+import WeaponManager from './WeaponManager'
 
 interface EditUnitModalProps {
   unit: Unit
@@ -23,6 +24,7 @@ export default function EditUnitModal({ unit, onSave, onCancel }: EditUnitModalP
   const [leadership, setLeadership] = useState(unit.leadership)
   const [objectiveControl, setObjectiveControl] = useState(unit.objectiveControl)
   const [notes, setNotes] = useState(unit.notes || '')
+  const [weapons, setWeapons] = useState<Weapon[]>(unit.weapons || [])
   const [imageUrl, setImageUrl] = useState<string | undefined>(unit.imageUrl)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -52,8 +54,6 @@ export default function EditUnitModal({ unit, onSave, onCancel }: EditUnitModalP
     setUploading(true)
 
     let finalImageUrl = imageUrl
-
-    // Upload new image if selected
     if (imageFile && user) {
       const url = await uploadUnitImage(user.id, unit.id, imageFile)
       if (url) finalImageUrl = url
@@ -72,6 +72,7 @@ export default function EditUnitModal({ unit, onSave, onCancel }: EditUnitModalP
       objectiveControl,
       notes: notes || undefined,
       imageUrl: finalImageUrl,
+      weapons,
     })
   }
 
@@ -173,7 +174,7 @@ export default function EditUnitModal({ unit, onSave, onCancel }: EditUnitModalP
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 uppercase">Wounds (per model)</label>
+              <label className="text-xs text-gray-500 uppercase">Wounds / model</label>
               <input
                 type="number"
                 value={wounds}
@@ -233,6 +234,11 @@ export default function EditUnitModal({ unit, onSave, onCancel }: EditUnitModalP
                 className="w-full mt-1 bg-surface-900 border border-surface-600 rounded px-3 py-2 text-gray-100 focus:outline-none focus:border-olive-500"
               />
             </div>
+          </div>
+
+          {/* Weapons */}
+          <div className="border-t border-surface-600 pt-3">
+            <WeaponManager weapons={weapons} onChange={setWeapons} />
           </div>
 
           <div>
