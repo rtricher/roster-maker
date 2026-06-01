@@ -116,8 +116,11 @@ export default function RosterBuilder() {
         }, 0)
         setRoster({ ...roster, totalPoints: newTotal })
       }
+      setEditingUnit(null)
+    } else {
+      // Save failed — keep modal open so user doesn't lose work
+      alert('Failed to save changes. Please try again.')
     }
-    setEditingUnit(null)
   }
 
   const handleImageChange = async (unitId: string, imageUrl: string | undefined) => {
