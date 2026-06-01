@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { Roster, Unit } from '../../../../packages/shared/src/types'
 import { useAuth } from '../lib/AuthContext'
@@ -19,6 +19,7 @@ export default function RosterBuilder() {
   const [searchParams] = useSearchParams()
   const rosterId = searchParams.get('id')
   const { user, loading: authLoading } = useAuth()
+  const hasLoaded = useRef(false)
 
   const [roster, setRoster] = useState<Roster | null>(null)
   const [units, setUnits] = useState<Unit[]>([])
@@ -36,8 +37,12 @@ export default function RosterBuilder() {
       navigate('/')
       return
     }
-    loadRoster()
-  }, [rosterId, user, authLoading])
+    // Only load once — don't re-trigger on user object reference changes
+    if (!hasLoaded.current) {
+      hasLoaded.current = true
+      loadRoster()
+    }
+  }, [rosterId, authLoading])
 
   const loadRoster = async () => {
     setLoading(true)
@@ -118,7 +123,6 @@ export default function RosterBuilder() {
       }
       setEditingUnit(null)
     } else {
-      // Save failed — keep modal open so user doesn't lose work
       alert('Failed to save changes. Please try again.')
     }
   }
