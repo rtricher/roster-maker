@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { Unit } from '../../../../packages/shared/src/types'
-import WoundTracker from './WoundTracker'
 import UnitDetailModal from './UnitDetailModal'
 
 interface UnitCardProps {
@@ -15,6 +14,48 @@ interface UnitCardProps {
 export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRemove, onEdit, onImageChange }: UnitCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+
+  // Compute display values
+  const modelsAlive = modelWounds.filter((w) => w > 0).length
+  const totalWoundsRemaining = modelWounds.reduce((sum, w) => sum + w, 0)
+  const totalWoundsMax = unit.count * unit.wounds
+  const isMultiModel = unit.count > 1
+  const isMultiWound = unit.wounds > 1
+
+  // Model counter: kill/revive last/first
+  const decrementModels = () => {
+    const next = [...modelWounds]
+    for (let i = next.length - 1; i >= 0; i--) {
+      if (next[i] > 0) { next[i] = 0; break }
+    }
+    onUpdateModelWounds(unit.id, next)
+  }
+  const incrementModels = () => {
+    const next = [...modelWounds]
+    for (let i = 0; i < next.length; i++) {
+      if (next[i] === 0) { next[i] = unit.wounds; break }
+    }
+    onUpdateModelWounds(unit.id, next)
+  }
+
+  // Wound counter: damage/heal the first alive model
+  const decrementWounds = () => {
+    const next = [...modelWounds]
+    for (let i = 0; i < next.length; i++) {
+      if (next[i] > 0) { next[i]--; break }
+    }
+    onUpdateModelWounds(unit.id, next)
+  }
+  const incrementWounds = () => {
+    const next = [...modelWounds]
+    // Heal first model that's below max but above 0 (or exactly 0 for single model)
+    for (let i = 0; i < next.length; i++) {
+      if (next[i] < unit.wounds && (isMultiModel ? next[i] > 0 : true)) {
+        next[i]++; break
+      }
+    }
+    onUpdateModelWounds(unit.id, next)
+  }
 
   return (
     <>
@@ -46,7 +87,7 @@ export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRem
                     <span className="text-amber-400 font-semibold">{unit.points} pts</span>
                     <span className="text-gray-500">·</span>
                     <span className="text-gray-400">{unit.count} model{unit.count !== 1 ? 's' : ''}</span>
-                    {unit.wounds > 1 && (
+                    {isMultiWound && (
                       <>
                         <span className="text-gray-500">·</span>
                         <span className="text-gray-400">{unit.wounds}W</span>
@@ -55,7 +96,7 @@ export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRem
                   </div>
                 </div>
 
-                {/* Action buttons — stop propagation so they don't toggle expand */}
+                {/* Action buttons */}
                 <div className="flex items-center gap-1 ml-2" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => setModalOpen(true)}
@@ -78,25 +119,52 @@ export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRem
             </div>
           </div>
 
+          {/* Wound counters — ALWAYS visible */}
+          <div className="flex items-center gap-4 mt-3" onClick={(e) => e.stopPropagation()}>
+            {/* Model counter (only if multi-model) */}
+            {isMultiModel && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-gray-500 uppercase w-12">Models</span>
+                <button
+                  onClick={decrementModels}
+                  className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+                >−</button>
+                <span className={`text-sm font-bold min-w-[2.5rem] text-center ${modelsAlive === 0 ? 'text-red-400' : 'text-gray-200'}`}>
+                  {modelsAlive}/{unit.count}
+                </span>
+                <button
+                  onClick={incrementModels}
+                  className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+                >+</button>
+              </div>
+            )}
+
+            {/* Wound counter (always shown — total wounds for unit) */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-500 uppercase w-12">Wounds</span>
+              <button
+                onClick={decrementWounds}
+                className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+              >−</button>
+              <span className={`text-sm font-bold min-w-[2.5rem] text-center ${totalWoundsRemaining === 0 ? 'text-red-400' : 'text-gray-200'}`}>
+                {totalWoundsRemaining}/{totalWoundsMax}
+              </span>
+              <button
+                onClick={incrementWounds}
+                className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+              >+</button>
+            </div>
+          </div>
+
           {/* Expand indicator */}
           <div className="flex justify-center mt-2">
-            <span className="text-[10px] text-gray-600">{expanded ? '▲ tap to collapse' : '▼ tap to expand'}</span>
+            <span className="text-[10px] text-gray-600">{expanded ? '▲' : '▼'}</span>
           </div>
         </div>
 
         {/* Expanded content */}
         {expanded && (
           <div className="px-4 pb-4 space-y-3 border-t border-surface-700 pt-3">
-            {/* Wound tracker */}
-            <div onClick={(e) => e.stopPropagation()}>
-              <WoundTracker
-                modelCount={unit.count}
-                woundsPerModel={unit.wounds}
-                modelWounds={modelWounds}
-                onChange={(newWounds) => onUpdateModelWounds(unit.id, newWounds)}
-              />
-            </div>
-
             {/* Stats — single line */}
             <div className="flex items-center gap-1 overflow-x-auto">
               {[
@@ -121,6 +189,25 @@ export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRem
                   <span key={ability} className="text-[11px] bg-olive-600/30 text-olive-400 px-2 py-0.5 rounded">
                     {ability}
                   </span>
+                ))}
+              </div>
+            )}
+
+            {/* Weapons summary */}
+            {unit.weapons.length > 0 && (
+              <div className="space-y-1">
+                {unit.weapons.map((weapon, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-xs">
+                    <span className={`px-1 py-0.5 rounded text-[9px] ${
+                      weapon.type === 'ranged' ? 'bg-blue-900/40 text-blue-400' : 'bg-red-900/40 text-red-400'
+                    }`}>
+                      {weapon.type === 'ranged' ? 'R' : 'M'}
+                    </span>
+                    <span className="text-gray-200 font-medium">{weapon.name}</span>
+                    <span className="text-gray-500 text-[10px]">
+                      {weapon.range} · A:{weapon.attacks} · S:{weapon.strength} · AP:{weapon.ap} · D:{weapon.damage}
+                    </span>
+                  </div>
                 ))}
               </div>
             )}
