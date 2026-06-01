@@ -227,16 +227,19 @@ export async function updateUnit(
   unitId: string,
   updates: Partial<Omit<Unit, 'id' | 'currentWounds'>>
 ): Promise<Unit | null> {
+  console.log('[updateUnit] called', { user: !!user, rosterId, unitId, updates })
+
   if (!user) {
     const rosters = loadGuestRosters()
     const rIdx = rosters.findIndex((r) => r.id === rosterId)
-    if (rIdx === -1) return null
+    if (rIdx === -1) { console.error('[updateUnit] guest roster not found'); return null }
     const uIdx = rosters[rIdx].units.findIndex((u) => u.id === unitId)
-    if (uIdx === -1) return null
+    if (uIdx === -1) { console.error('[updateUnit] guest unit not found'); return null }
     rosters[rIdx].units[uIdx] = { ...rosters[rIdx].units[uIdx], ...updates }
     rosters[rIdx].totalPoints = rosters[rIdx].units.reduce((sum, u) => sum + u.points, 0)
     rosters[rIdx].updatedAt = new Date()
     saveGuestRosters(rosters)
+    console.log('[updateUnit] guest save success')
     return rosters[rIdx].units[uIdx]
   }
 
@@ -255,6 +258,8 @@ export async function updateUnit(
   if (updates.weapons !== undefined) dbUpdates.weapons = updates.weapons
   if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl || null
 
+  console.log('[updateUnit] dbUpdates:', dbUpdates)
+
   const { data, error } = await supabase
     .from('units')
     .update(dbUpdates)
@@ -263,10 +268,11 @@ export async function updateUnit(
     .single()
 
   if (error) {
-    console.error('Failed to update unit:', error)
+    console.error('[updateUnit] Supabase error:', error)
     return null
   }
 
+  console.log('[updateUnit] success, data:', data)
   await recalculateRosterPoints(rosterId)
   return mapUnitFromDb(data)
 }
