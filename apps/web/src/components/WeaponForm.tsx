@@ -23,8 +23,7 @@ export default function WeaponForm({ weapon, onSave, onCancel }: WeaponFormProps
     if (newType === 'ranged' && range === 'Melee') setRange('24"')
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSave = () => {
     if (!name.trim()) return
     onSave({
       name: name.trim(),
@@ -39,7 +38,7 @@ export default function WeaponForm({ weapon, onSave, onCancel }: WeaponFormProps
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <div className="space-y-3">
       <div>
         <label className="text-xs text-gray-500 uppercase">Weapon Name *</label>
         <input
@@ -140,13 +139,14 @@ export default function WeaponForm({ weapon, onSave, onCancel }: WeaponFormProps
           Cancel
         </button>
         <button
-          type="submit"
+          type="button"
+          onClick={handleSave}
           disabled={!name.trim()}
           className="px-3 py-1.5 rounded text-xs font-medium bg-olive-500 text-white hover:bg-olive-600 disabled:opacity-40 transition-colors"
         >
           {weapon ? 'Update Weapon' : 'Add Weapon'}
         </button>
       </div>
-    </form>
+    </div>
   )
 }

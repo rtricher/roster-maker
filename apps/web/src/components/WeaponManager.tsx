@@ -29,7 +29,6 @@ export default function WeaponManager({ weapons, onChange }: WeaponManagerProps)
 
   const handleAddWeapon = async (weapon: Weapon) => {
     onChange([...weapons, weapon])
-    // Also save to weapon library
     await createWeaponTemplate(user, unitWeaponToTemplate(weapon))
     await loadLibrary()
     setView('list')
@@ -80,7 +79,7 @@ export default function WeaponManager({ weapons, onChange }: WeaponManagerProps)
       <div>
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-xs text-gray-500 uppercase">Pick from Library</h4>
-          <button onClick={() => setView('list')} className="text-xs text-gray-400 hover:text-gray-200">
+          <button type="button" onClick={() => setView('list')} className="text-xs text-gray-400 hover:text-gray-200">
             ← Back
           </button>
         </div>
@@ -88,6 +87,7 @@ export default function WeaponManager({ weapons, onChange }: WeaponManagerProps)
           <div className="text-center py-4 text-gray-500 text-xs">
             <p>No weapons in your library yet</p>
             <button
+              type="button"
               onClick={() => setView('add')}
               className="text-olive-400 mt-1"
             >
@@ -98,6 +98,7 @@ export default function WeaponManager({ weapons, onChange }: WeaponManagerProps)
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {library.map((template) => (
               <button
+                type="button"
                 key={template.id}
                 onClick={() => handlePickFromLibrary(template)}
                 className="w-full text-left bg-surface-700 hover:bg-surface-600 rounded px-3 py-2 transition-colors"
@@ -129,6 +130,7 @@ export default function WeaponManager({ weapons, onChange }: WeaponManagerProps)
         <div className="flex gap-1">
           {library.length > 0 && (
             <button
+              type="button"
               onClick={() => setView('pick')}
               className="px-2 py-1 rounded text-[10px] font-medium bg-surface-600 text-gray-400 hover:text-gray-200 transition-colors"
             >
@@ -136,6 +138,7 @@ export default function WeaponManager({ weapons, onChange }: WeaponManagerProps)
             </button>
           )}
           <button
+            type="button"
             onClick={() => setView('add')}
             className="px-2 py-1 rounded text-[10px] font-medium bg-olive-600 text-white hover:bg-olive-500 transition-colors"
           >
@@ -167,12 +170,14 @@ export default function WeaponManager({ weapons, onChange }: WeaponManagerProps)
               </div>
               <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                 <button
+                  type="button"
                   onClick={() => { setEditingIndex(idx); setView('edit') }}
                   className="px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:text-gray-200 transition-colors"
                 >
                   ✎
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleRemoveWeapon(idx)}
                   className="px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:text-red-400 transition-colors"
                 >
