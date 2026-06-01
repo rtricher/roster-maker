@@ -1,129 +1,123 @@
 /**
- * WoundTracker — adapts display based on unit profile:
+ * WoundTracker — compact counter style (like Turn/CP)
  *
- * - Multi-model, 1W each → simple model pips (click to kill/revive)
- * - Single model, many wounds → wound pips (click to damage/heal)
- * - Multi-model, many wounds → per-model wound rows with individual pips
+ * - Multi-model, 1W each → "Models: ◀ 7/10 ▶"
+ * - Single model, many wounds → "Wounds: ◀ 9/12 ▶"
+ * - Multi-model, many wounds → per-model counters in a compact grid
  */
 
 interface WoundTrackerProps {
-  /** Number of models in the unit */
   modelCount: number
-  /** Wounds per model */
   woundsPerModel: number
-  /** Array of current wounds per model (length = modelCount) */
   modelWounds: number[]
-  /** Called when wounds change */
   onChange: (modelWounds: number[]) => void
 }
 
 export default function WoundTracker({ modelCount, woundsPerModel, modelWounds, onChange }: WoundTrackerProps) {
-  // Simple case: multi-model, 1W each — model alive/dead pips
+  // Simple case: multi-model, 1W each
   if (woundsPerModel === 1) {
     const alive = modelWounds.filter((w) => w > 0).length
     return (
-      <div>
-        <div className="text-[10px] text-gray-500 uppercase mb-1">
-          Models Remaining: {alive}/{modelCount}
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {modelWounds.map((w, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                const next = [...modelWounds]
-                next[i] = w > 0 ? 0 : 1
-                onChange(next)
-              }}
-              className={`w-5 h-5 rounded-full border-2 transition-colors ${
-                w > 0
-                  ? 'bg-green-500 border-green-400'
-                  : 'bg-transparent border-surface-600'
-              }`}
-              title={w > 0 ? `Model ${i + 1}: alive` : `Model ${i + 1}: dead`}
-            />
-          ))}
-        </div>
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] text-gray-500 uppercase w-14">Models</span>
+        <button
+          onClick={() => {
+            // Kill one model (find last alive, set to 0)
+            const next = [...modelWounds]
+            for (let i = next.length - 1; i >= 0; i--) {
+              if (next[i] > 0) { next[i] = 0; break }
+            }
+            onChange(next)
+          }}
+          className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+        >
+          −
+        </button>
+        <span className={`text-sm font-bold min-w-[3rem] text-center ${alive === 0 ? 'text-red-400' : 'text-gray-200'}`}>
+          {alive} / {modelCount}
+        </span>
+        <button
+          onClick={() => {
+            // Revive one model (find first dead, set to 1)
+            const next = [...modelWounds]
+            for (let i = 0; i < next.length; i++) {
+              if (next[i] === 0) { next[i] = 1; break }
+            }
+            onChange(next)
+          }}
+          className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+        >
+          +
+        </button>
       </div>
     )
   }
 
-  // Single model, many wounds — wound pips
+  // Single model, many wounds
   if (modelCount === 1) {
     const current = modelWounds[0]
     return (
-      <div>
-        <div className="text-[10px] text-gray-500 uppercase mb-1">
-          Wounds: {current}/{woundsPerModel}
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {Array.from({ length: woundsPerModel }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                // Click pip i: if it's filled (i < current), set wounds to i
-                // If it's empty (i >= current), set wounds to i+1
-                const next = [...modelWounds]
-                if (i < current) {
-                  next[0] = i
-                } else {
-                  next[0] = i + 1
-                }
-                onChange(next)
-              }}
-              className={`w-5 h-5 rounded-full border-2 transition-colors ${
-                i < current
-                  ? 'bg-green-500 border-green-400'
-                  : 'bg-transparent border-surface-600'
-              }`}
-              title={`Wound ${i + 1}`}
-            />
-          ))}
-        </div>
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] text-gray-500 uppercase w-14">Wounds</span>
+        <button
+          onClick={() => {
+            if (current > 0) onChange([current - 1])
+          }}
+          className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+        >
+          −
+        </button>
+        <span className={`text-sm font-bold min-w-[3rem] text-center ${current === 0 ? 'text-red-400' : 'text-gray-200'}`}>
+          {current} / {woundsPerModel}
+        </span>
+        <button
+          onClick={() => {
+            if (current < woundsPerModel) onChange([current + 1])
+          }}
+          className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+        >
+          +
+        </button>
       </div>
     )
   }
 
-  // Multi-model, multi-wound — compact per-model rows
+  // Multi-model, multi-wound — compact per-model counters
   const totalAlive = modelWounds.filter((w) => w > 0).length
-  const totalWoundsRemaining = modelWounds.reduce((sum, w) => sum + w, 0)
-  const totalWoundsMax = modelCount * woundsPerModel
-
   return (
     <div>
       <div className="text-[10px] text-gray-500 uppercase mb-1">
-        Models: {totalAlive}/{modelCount} · Wounds: {totalWoundsRemaining}/{totalWoundsMax}
+        Models: {totalAlive}/{modelCount}
       </div>
-      <div className="space-y-1">
-        {modelWounds.map((current, modelIdx) => (
-          <div key={modelIdx} className="flex items-center gap-2">
-            <span className={`text-[10px] w-4 text-right ${current > 0 ? 'text-gray-400' : 'text-gray-600 line-through'}`}>
-              {modelIdx + 1}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+        {modelWounds.map((current, idx) => (
+          <div key={idx} className="flex items-center gap-1 bg-surface-700/50 rounded px-1.5 py-0.5">
+            <span className={`text-[10px] w-3 ${current === 0 ? 'text-red-400' : 'text-gray-500'}`}>
+              {idx + 1}
             </span>
-            <div className="flex gap-0.5">
-              {Array.from({ length: woundsPerModel }, (_, woundIdx) => (
-                <button
-                  key={woundIdx}
-                  onClick={() => {
-                    const next = [...modelWounds]
-                    if (woundIdx < current) {
-                      next[modelIdx] = woundIdx
-                    } else {
-                      next[modelIdx] = woundIdx + 1
-                    }
-                    onChange(next)
-                  }}
-                  className={`w-4 h-4 rounded-full border transition-colors ${
-                    woundIdx < current
-                      ? 'bg-green-500 border-green-400'
-                      : 'bg-transparent border-surface-600'
-                  }`}
-                />
-              ))}
-            </div>
-            {current === 0 && (
-              <span className="text-[10px] text-red-400/60">dead</span>
-            )}
+            <button
+              onClick={() => {
+                const next = [...modelWounds]
+                if (next[idx] > 0) next[idx]--
+                onChange(next)
+              }}
+              className="w-5 h-5 rounded text-gray-400 hover:text-gray-200 text-xs font-bold flex items-center justify-center"
+            >
+              −
+            </button>
+            <span className={`text-xs font-bold min-w-[2rem] text-center ${current === 0 ? 'text-red-400' : 'text-gray-200'}`}>
+              {current}/{woundsPerModel}
+            </span>
+            <button
+              onClick={() => {
+                const next = [...modelWounds]
+                if (next[idx] < woundsPerModel) next[idx]++
+                onChange(next)
+              }}
+              className="w-5 h-5 rounded text-gray-400 hover:text-gray-200 text-xs font-bold flex items-center justify-center"
+            >
+              +
+            </button>
           </div>
         ))}
       </div>
