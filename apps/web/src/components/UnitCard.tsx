@@ -165,21 +165,24 @@ export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRem
         {/* Expanded content */}
         {expanded && (
           <div className="px-4 pb-4 space-y-3 border-t border-surface-700 pt-3">
-            {/* Stats — single line */}
-            <div className="flex items-center gap-1 overflow-x-auto">
-              {[
-                { label: 'M', value: unit.movement },
-                { label: 'T', value: unit.toughness },
-                { label: 'SV', value: unit.save },
-                { label: 'W', value: unit.wounds },
-                { label: 'LD', value: unit.leadership },
-                { label: 'OC', value: unit.objectiveControl },
-              ].map((stat) => (
-                <div key={stat.label} className="bg-surface-900 rounded px-2 py-1 text-center flex-shrink-0">
-                  <div className="text-[9px] text-gray-500 uppercase leading-tight">{stat.label}</div>
-                  <div className="text-sm font-bold text-gray-200 leading-tight">{stat.value}</div>
-                </div>
-              ))}
+            {/* Base Stats — single line with label */}
+            <div>
+              <div className="text-[10px] text-gray-500 uppercase mb-2 font-semibold">Base Stats</div>
+              <div className="flex items-center gap-1 overflow-x-auto">
+                {[
+                  { label: 'M', value: unit.movement },
+                  { label: 'T', value: unit.toughness },
+                  { label: 'SV', value: unit.save },
+                  { label: 'W', value: unit.wounds },
+                  { label: 'LD', value: unit.leadership },
+                  { label: 'OC', value: unit.objectiveControl },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-surface-900 rounded px-2 py-1 text-center flex-shrink-0">
+                    <div className="text-[9px] text-gray-500 uppercase leading-tight">{stat.label}</div>
+                    <div className="text-sm font-bold text-gray-200 leading-tight">{stat.value}</div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Abilities */}
@@ -193,20 +196,36 @@ export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRem
               </div>
             )}
 
-            {/* Weapons summary */}
+            {/* Weapons */}
             {unit.weapons.length > 0 && (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {unit.weapons.map((weapon, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-xs">
-                    <span className={`px-1 py-0.5 rounded text-[9px] ${
-                      weapon.type === 'ranged' ? 'bg-blue-900/40 text-blue-400' : 'bg-red-900/40 text-red-400'
-                    }`}>
-                      {weapon.type === 'ranged' ? 'R' : 'M'}
-                    </span>
-                    <span className="text-gray-200 font-medium">{weapon.name}</span>
-                    <span className="text-gray-500 text-[10px]">
-                      {weapon.range} · A:{weapon.attacks} · S:{weapon.strength} · AP:{weapon.ap} · D:{weapon.damage}
-                    </span>
+                  <div key={idx}>
+                    {/* Weapon name */}
+                    <div className="text-xs text-gray-200 font-medium mb-2">
+                      {weapon.name}
+                      <span className={`ml-2 px-1 py-0.5 rounded text-[9px] ${
+                        weapon.type === 'ranged' ? 'bg-blue-900/40 text-blue-400' : 'bg-red-900/40 text-red-400'
+                      }`}>
+                        {weapon.type === 'ranged' ? 'Ranged' : 'Melee'}
+                      </span>
+                    </div>
+                    {/* Weapon stats — styled like base stats */}
+                    <div className="flex items-center gap-1 overflow-x-auto">
+                      {[
+                        { label: 'R', value: weapon.range || '—' },
+                        { label: 'A', value: weapon.attacks },
+                        { label: weapon.type === 'ranged' ? 'BS' : 'WS', value: weapon.ballistic || weapon.melee || '—' },
+                        { label: 'S', value: weapon.strength },
+                        { label: 'AP', value: weapon.ap },
+                        { label: 'D', value: weapon.damage },
+                      ].map((stat) => (
+                        <div key={stat.label} className="bg-surface-900 rounded px-2 py-1 text-center flex-shrink-0">
+                          <div className="text-[9px] text-gray-500 uppercase leading-tight">{stat.label}</div>
+                          <div className="text-sm font-bold text-gray-200 leading-tight">{stat.value}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
