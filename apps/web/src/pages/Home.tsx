@@ -331,7 +331,7 @@ export default function Home() {
                           </button>
 
                           <div className="min-w-0">
-                            <h3 className="font-bold text-gray-100 truncate">{unit.name}</h3>
+                            <h3 className="font-bold text-gray-100 truncate">{unit.name} <span className="text-amber-400 font-semibold">{unit.points} pts</span> </h3>
                             <div className="flex items-center gap-2 text-sm">
                               <span className="text-amber-400 font-semibold">{unit.points} pts</span>
                               <span className="text-gray-500">·</span>
