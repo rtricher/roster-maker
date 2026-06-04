@@ -82,17 +82,44 @@ export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRem
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between">
                 <div className="min-w-0">
-                  <h3 className="text-base font-bold text-gray-100 truncate">{unit.name}</h3>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-amber-400 font-semibold">{unit.points} pts</span>
-                    <span className="text-gray-500">·</span>
-                    <span className="text-gray-400">{unit.count} model{unit.count !== 1 ? 's' : ''}</span>
-                    {isMultiWound && (
-                      <>
-                        <span className="text-gray-500">·</span>
-                        <span className="text-gray-400">{unit.wounds}W</span>
-                      </>
-                    )}
+                  <h3 className="text-base font-bold text-gray-100 truncate">{unit.name} <span className="text-amber-400 font-semibold">{unit.points} pts</span></h3>
+                  <div>
+                    {/* Wound counters — ALWAYS visible */}
+                    <div className="flex items-center gap-4 mt-3" onClick={(e) => e.stopPropagation()}>
+                      {/* Model counter (only if multi-model) */}
+                      {isMultiModel && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-gray-500 uppercase w-12">Models</span>
+                          <button
+                            onClick={decrementModels}
+                            className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+                          >−</button>
+                          <span className={`text-sm font-bold min-w-[2.5rem] text-center ${modelsAlive === 0 ? 'text-red-400' : 'text-gray-200'}`}>
+                            {modelsAlive}/{unit.count}
+                          </span>
+                          <button
+                            onClick={incrementModels}
+                            className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+                          >+</button>
+                        </div>
+                      )}
+          
+                      {/* Wound counter (always shown — total wounds for unit) */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-gray-500 uppercase w-12">Wounds</span>
+                        <button
+                          onClick={decrementWounds}
+                          className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+                        >−</button>
+                        <span className={`text-sm font-bold min-w-[2.5rem] text-center ${totalWoundsRemaining === 0 ? 'text-red-400' : 'text-gray-200'}`}>
+                          {totalWoundsRemaining}/{totalWoundsMax}
+                        </span>
+                        <button
+                          onClick={incrementWounds}
+                          className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+                        >+</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
