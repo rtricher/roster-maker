@@ -1,17 +1,17 @@
 # Copilot Context — Roster Maker
 
 > **Purpose:** Catch up Copilot quickly on project history, decisions, and current state.
-> **Last updated:** 2026-06-01
+> **Last updated:** 2026-06-04
 
 ---
 
-> ⚠️ **START-OF-SESSION REMINDER:** Before doing anything, review the current state of the repo — check what branches exist, what's on `main`, and what's in progress. The user may have uploaded files or merged branches between sessions.
+> ⚠️ **START-OF-SESSION REMINDER:** Before doing anything, review the current state of the repo — check what branches exist, what's on `main`, and what's in progress. The user may have uploaded files or made changes between sessions.
 
 ---
 
 ## Project Overview
 
-**Roster Maker** is a **game-agnostic** tabletop wargame roster builder and game-day companion. While initially inspired by Warhammer 40K, it is designed to work with **any tabletop game** — users enter their own unit data from their own sources.
+**Roster Maker** is a **game-agnostic** tabletop wargame roster builder and game-day companion. While initially inspired by Warhammer 40K, it is designed to work with **any tabletop game** — users enter their own unit data manually.
 
 **Repo:** `rtricher/roster-maker` (public)
 **Owner:** rtricher
@@ -146,6 +146,36 @@ roster-maker/
 
 ---
 
+## What Was Built (Session 6 — 2026-06-04)
+
+### Weapon Display Redesign — 🔄 IN PROGRESS (feat/weapon-display-redesign)
+- **Redesigned weapon display** in UnitCard expanded view to match stat box styling
+  - Weapons now display in a table alongside base stats for perfect alignment
+  - Each weapon name + type badge, followed by stat boxes (R, A, BS/WS, S, AP, D)
+  - Fixed BS/WS detection: correctly displays BS for ranged, WS for melee
+  - Single unified table: Base Stats row + Weapon rows all aligned
+  
+### Unit Library Styling — 🔄 IN PROGRESS (feat/weapon-display-redesign)
+- **Synced Unit Library expanded view** to match UnitCard exactly
+  - Updated Home.tsx Unit Library cards to use same table layout with Base Stats + Weapons
+  - Consistent visual appearance across both views
+  - Applied to: `apps/web/src/pages/Home.tsx` (lines 372-429)
+
+### Wound Counter Layout — 🔄 IN PROGRESS (feat/weapon-display-redesign)
+- **Model/Wound counters now vertical** (label above buttons + display)
+  - Changed from horizontal to `flex-col` layout with `items-center`
+  - Labels ("Models", "Wounds") appear above the counter controls
+  - **Saves significant horizontal space** on collapsed unit cards
+  - Applies to: UnitCard (lines 88-126)
+
+### Summary of Changes
+- **UnitCard.tsx (lines 74, 77):** Fixed thumbnail size back to `w-10 h-10` (was accidentally `w-15 h-15`, not valid Tailwind)
+- **UnitCard.tsx (lines 88-126):** Restructured wound counters to vertical layout (`flex-col`)
+- **UnitCard.tsx (lines 163-218):** Unified table for Base Stats + all Weapon rows (perfect alignment)
+- **Home.tsx (lines 374-429):** Mirrored UnitCard table layout in Unit Library expanded view
+
+---
+
 ## Deployment
 
 ### Web App → Vercel
@@ -164,7 +194,7 @@ roster-maker/
 
 - **Project URL:** `https://nxzyaseddqefjfmxxsix.supabase.co`
 - **Tables:** `users`, `rosters`, `units`, `game_stats`, `game_systems`, `weapon_templates`
-- **Unit columns:** `id`, `roster_id`, `name`, `points`, `count`, `notes`, `movement`, `toughness`, `save`, `wounds`, `leadership`, `objective_control`, `abilities` (JSONB), `weapons` (JSONB), `image_url` (TEXT), `role` (TEXT)
+- **Unit columns:** `id`, `roster_id`, `name`, `points`, `count`, `notes`, `movement`, `toughness`, `save`, `wounds`, `leadership`, `objective_control`, `abilities` (JSONB), `weapons` (JSONB)
 - **Roster columns:** includes `game_system_id` (UUID, nullable FK)
 - **RLS:** Enabled on `rosters`, `units`, `game_stats`, `weapon_templates`, `game_systems`
   - Units policy: `roster_id IN (SELECT id FROM rosters WHERE user_id = auth.uid())`
@@ -182,7 +212,7 @@ roster-maker/
 ```
 Home.tsx (tabbed)
 ├── Tab: "Your Rosters" — roster list, create/delete
-├── Tab: "Your Units" — unit library with expandable cards (stats, weapons, notes)
+├── Tab: "Your Units" — unit library with expandable cards (table: Base Stats + Weapons)
 ├── CreateRosterModal.tsx
 ├── AddUnitForm.tsx (with image upload)
 ├── EditUnitModal.tsx (with image, WeaponManager)
@@ -190,8 +220,8 @@ Home.tsx (tabbed)
 
 RosterBuilder.tsx
 ├── Header.tsx (sticky top — roster name ✎, faction, points/max)
-├── UnitCard.tsx (per unit — thumbnail, ± wound counters always visible, tap to expand)
-│   └── Expanded: stats line, abilities, weapons, notes
+├── UnitCard.tsx (per unit — thumbnail, vertical wound counters, tap to expand)
+│   └── Expanded: table with Base Stats row + Weapon rows, abilities, notes
 │   └── UnitDetailModal.tsx (⋮ button — full detail with image upload, ✎ Edit)
 ├── Footer.tsx (sticky bottom — Game Options, Turn counter, CP counter)
 ├── AddUnitToRosterModal.tsx ("From Library" picker + "Create New")
@@ -217,7 +247,6 @@ EditUnitModal.tsx
 8. **Railway API unused** — can remove `apps/api/` and `railway.toml`
 9. **Unit Library is localStorage-only** — doesn't sync across devices for signed-in users
 10. **Debug console.log in rosterService.ts** — remove when stable
-11. **Weapon display in expanded card** — needs redesign to look like stat boxes, aligned with unit stats
 
 ---
 
@@ -230,7 +259,7 @@ EditUnitModal.tsx
 - **Dark military theme** — `surface-900` (#0f1114), olive green, amber for points
 - **UUIDs everywhere** — `crypto.randomUUID()` guest, `gen_random_uuid()` Supabase
 - **Direct Supabase access** from frontend (RLS protects data)
-- **Compact wound tracking** — ± counters, max 2 per card (Models + Wounds)
+- **Compact wound tracking** — ± counters with labels above, vertical layout
 - **Max points = soft cap** — shows red warning, never blocks
 - **Icon consistency** — `⋮` for more/details, `🗑` for delete, `✎` for edit
 - **Image cache-busting** — `?t=timestamp` appended to image URLs after replace
@@ -240,12 +269,13 @@ EditUnitModal.tsx
 - **Guest import on sign-in** — non-intrusive modal, dismissable, remembers choice
 - **No nested `<form>` tags** — WeaponForm uses `<div>` + `type="button"` to prevent accidental submissions
 - **SPA routing** — vercel.json rewrites all paths to index.html
+- **Table-based layout for stats** — unified tables in expanded views (Base Stats + Weapons rows) for perfect alignment
 
 ---
 
 ## What to Build Next (Priority Order)
 
-1. **Weapon display redesign** — weapons should display like stat boxes (aligned grid matching unit stats)
+1. **Merge weapon-display-redesign PR** — test on live, verify all alignments work
 2. **Display order / reordering** — units and weapons should be reorderable (drag-and-drop preferred, or ↑↓ buttons)
 3. **Wire game systems into UI** — game system picker on roster creation, drives stat fields
 4. **Superuser dashboard** — admin page for app control, user management
@@ -285,7 +315,7 @@ git push -u origin feat/branch-name
 - **⚠️ AT SESSION START:** Always check open branches and current `main` state before providing files — things may have changed between sessions.
 - User is **learning CLI** but still primarily uses GitHub web UI for file uploads
 - Copilot coding agent is **NOT** enabled — provide complete files as code blocks for manual upload
-- User primarily tests **signed in** — Supabase is the main data path
+- User primarily tests **signed in** — Supabase is the main data path to validate against
 - Vercel **auto-deploys** on push to `main`
 - Import paths from `apps/web/src/pages/` or `apps/web/src/components/`: `'../../../../packages/shared/src/types'`
 - `vercel.json` uses **npm** (not pnpm) due to Vercel compatibility issues
@@ -299,3 +329,4 @@ git push -u origin feat/branch-name
 - **NEVER nest `<form>` inside `<form>`** — use `<div>` + `type="button"` for sub-forms
 - Supabase Storage policies needed: INSERT, UPDATE, DELETE, SELECT on `unit-images` bucket
 - Units RLS uses subquery: `roster_id IN (SELECT id FROM rosters WHERE user_id = auth.uid())`
+- **Table layouts:** Use `<table>` with `<tbody>` for aligned rows of stats/weapons (avoids spacing issues with flex)
