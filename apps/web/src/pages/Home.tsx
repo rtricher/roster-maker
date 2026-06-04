@@ -368,24 +368,65 @@ export default function Home() {
                     </div>
 
                     {/* Expanded details */}
-                    {isExpanded && (
+                    {expanded && (
                       <div className="px-4 pb-4 space-y-3 border-t border-surface-700 pt-3">
-                        {/* Stats line */}
-                        <div className="flex items-center gap-1 overflow-x-auto">
-                          {[
-                            { label: 'M', value: unit.movement },
-                            { label: 'T', value: unit.toughness },
-                            { label: 'SV', value: unit.save },
-                            { label: 'W', value: unit.wounds },
-                            { label: 'LD', value: unit.leadership },
-                            { label: 'OC', value: unit.objectiveControl },
-                          ].map((stat) => (
-                            <div key={stat.label} className="bg-surface-900 rounded px-2 py-1 text-center flex-shrink-0">
-                              <div className="text-[9px] text-gray-500 uppercase leading-tight">{stat.label}</div>
-                              <div className="text-sm font-bold text-gray-200 leading-tight">{stat.value}</div>
-                            </div>
-                          ))}
-                        </div>
+                        {/* Stats and Weapons — single table for alignment */}
+                        <table className="w-full">
+                          <tbody>
+                            {/* Base Stats row */}
+                            <tr>
+                              <td className="text-[10px] text-gray-500 uppercase font-semibold pr-3 whitespace-nowrap">Base Stats</td>
+                              <td className="w-full">
+                                <div className="flex items-center gap-1 overflow-x-auto">
+                                  {[
+                                    { label: 'M', value: unit.movement },
+                                    { label: 'T', value: unit.toughness },
+                                    { label: 'SV', value: unit.save },
+                                    { label: 'W', value: unit.wounds },
+                                    { label: 'LD', value: unit.leadership },
+                                    { label: 'OC', value: unit.objectiveControl },
+                                  ].map((stat) => (
+                                    <div key={stat.label} className="bg-surface-900 rounded px-2 py-1 text-center flex-shrink-0">
+                                      <div className="text-[9px] text-gray-500 uppercase leading-tight">{stat.label}</div>
+                                      <div className="text-sm font-bold text-gray-200 leading-tight">{stat.value}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+            
+                            {/* Weapon rows */}
+                            {unit.weapons.map((weapon, idx) => (
+                              <tr key={idx}>
+                                <td className="text-xs text-gray-200 font-medium pr-3 whitespace-nowrap">
+                                  {weapon.name}
+                                  <span className={`ml-2 px-1 py-0.5 rounded text-[9px] ${
+                                    weapon.type === 'ranged' ? 'bg-blue-900/40 text-blue-400' : 'bg-red-900/40 text-red-400'
+                                  }`}>
+                                    {weapon.type === 'ranged' ? 'Ranged' : 'Melee'}
+                                  </span>
+                                </td>
+                                <td className="w-full">
+                                  <div className="flex items-center gap-1 overflow-x-auto">
+                                    {[
+                                      { label: 'R', value: weapon.range || '—' },
+                                      { label: 'A', value: weapon.attacks },
+                                      { label: weapon.type === 'ranged' ? 'BS' : 'WS', value: weapon.type === 'ranged' ? (weapon.skill) : (weapon.skill) },
+                                      { label: 'S', value: weapon.strength },
+                                      { label: 'AP', value: weapon.ap },
+                                      { label: 'D', value: weapon.damage },
+                                    ].map((stat) => (
+                                      <div key={stat.label} className="bg-surface-900 rounded px-2 py-1 text-center flex-shrink-0">
+                                        <div className="text-[9px] text-gray-500 uppercase leading-tight">{stat.label}</div>
+                                        <div className="text-sm font-bold text-gray-200 leading-tight">{stat.value}</div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
 
                         {/* Abilities */}
                         {unit.abilities.length > 0 && (
