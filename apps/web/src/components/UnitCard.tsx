@@ -85,39 +85,43 @@ export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRem
                   <h3 className="text-base font-bold text-gray-100 truncate">{unit.name} <span className="text-amber-400 font-semibold">{unit.points} pts</span></h3>
                   <div>
                     {/* Wound counters — ALWAYS visible */}
-                    <div className="flex items-center gap-4 mt-3" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-start gap-4 mt-3" onClick={(e) => e.stopPropagation()}>
                       {/* Model counter (only if multi-model) */}
                       {isMultiModel && (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-gray-500 uppercase w-12">Models</span>
-                          <button
-                            onClick={decrementModels}
-                            className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
-                          >−</button>
-                          <span className={`text-sm font-bold min-w-[2.5rem] text-center ${modelsAlive === 0 ? 'text-red-400' : 'text-gray-200'}`}>
-                            {modelsAlive}/{unit.count}
-                          </span>
-                          <button
-                            onClick={incrementModels}
-                            className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
-                          >+</button>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-[10px] text-gray-500 uppercase font-semibold">Models</span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={decrementModels}
+                              className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+                            >−</button>
+                            <span className={`text-sm font-bold min-w-[2.5rem] text-center ${modelsAlive === 0 ? 'text-red-400' : 'text-gray-200'}`}>
+                              {modelsAlive}/{unit.count}
+                            </span>
+                            <button
+                              onClick={incrementModels}
+                              className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+                            >+</button>
+                          </div>
                         </div>
                       )}
           
                       {/* Wound counter (always shown — total wounds for unit) */}
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-gray-500 uppercase w-12">Wounds</span>
-                        <button
-                          onClick={decrementWounds}
-                          className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
-                        >−</button>
-                        <span className={`text-sm font-bold min-w-[2.5rem] text-center ${totalWoundsRemaining === 0 ? 'text-red-400' : 'text-gray-200'}`}>
-                          {totalWoundsRemaining}/{totalWoundsMax}
-                        </span>
-                        <button
-                          onClick={incrementWounds}
-                          className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
-                        >+</button>
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] text-gray-500 uppercase font-semibold">Wounds</span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={decrementWounds}
+                            className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+                          >−</button>
+                          <span className={`text-sm font-bold min-w-[2.5rem] text-center ${totalWoundsRemaining === 0 ? 'text-red-400' : 'text-gray-200'}`}>
+                            {totalWoundsRemaining}/{totalWoundsMax}
+                          </span>
+                          <button
+                            onClick={incrementWounds}
+                            className="w-6 h-6 rounded bg-surface-700 text-gray-400 hover:text-gray-200 text-sm font-bold flex items-center justify-center"
+                          >+</button>
+                        </div>
                       </div>
                     </div>
                   </div>
