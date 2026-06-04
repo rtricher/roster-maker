@@ -206,7 +206,7 @@ export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRem
                         {[
                           { label: 'R', value: weapon.range || '—' },
                           { label: 'A', value: weapon.attacks },
-                          { label: weapon.type === 'ranged' ? 'BS' : 'WS', value: weapon.type === 'ranged' ? (weapon.ballistic || '—') : (weapon.melee || '—') },
+                          { label: weapon.type === 'ranged' ? 'BS' : 'WS', value: weapon.type === 'ranged' ? (weapon.skill) : (weapon.skill) },
                           { label: 'S', value: weapon.strength },
                           { label: 'AP', value: weapon.ap },
                           { label: 'D', value: weapon.damage },
