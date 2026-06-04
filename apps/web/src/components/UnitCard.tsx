@@ -71,10 +71,10 @@ export default function UnitCard({ unit, modelWounds, onUpdateModelWounds, onRem
               <img
                 src={unit.imageUrl}
                 alt={unit.name}
-                className="w-15 h-15 rounded-lg object-cover border border-surface-600 flex-shrink-0"
+                className="w-10 h-10 rounded-lg object-cover border border-surface-600 flex-shrink-0"
               />
             ) : (
-              <div className="w-15 h-15 rounded-lg bg-surface-700 border border-surface-600 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-surface-700 border border-surface-600 flex items-center justify-center flex-shrink-0">
                 <span className="text-gray-600 text-sm">⚔</span>
               </div>
             )}
