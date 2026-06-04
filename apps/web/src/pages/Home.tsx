@@ -333,9 +333,7 @@ export default function Home() {
                           <div className="min-w-0">
                             <h3 className="font-bold text-gray-100 truncate">{unit.name} <span className="text-amber-400 font-semibold">{unit.points} pts</span> </h3>
                             <div className="flex items-center gap-2 text-sm">
-                              <span className="text-amber-400 font-semibold">{unit.points} pts</span>
-                              <span className="text-gray-500">·</span>
-                              <span className="text-gray-400">{unit.count} model{unit.count !== 1 ? 's' : ''}</span>
+                               <span className="text-gray-400">{unit.count} model{unit.count !== 1 ? 's' : ''}</span>
                               {unit.wounds > 1 && (
                                 <>
                                   <span className="text-gray-500">·</span>
