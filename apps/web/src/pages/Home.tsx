@@ -362,7 +362,7 @@ export default function Home() {
                       </div>
 
                       {/* Expand indicator */}
-                      <div className="flex justify-center mt-2">
+                      <div className="flex justify-center mt-1">
                         <span className="text-[10px] text-gray-600">{isExpanded ? '▲' : '▼'}</span>
                       </div>
                     </div>
