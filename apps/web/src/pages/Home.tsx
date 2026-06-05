@@ -314,10 +314,10 @@ export default function Home() {
                               <img
                                 src={unit.imageUrl}
                                 alt={unit.name}
-                                className="w-16 h-16 rounded-lg object-cover border border-surface-600 group-hover:border-olive-500 transition-colors"
+                                className="w-12 h-12 rounded-lg object-cover border border-surface-600 group-hover:border-olive-500 transition-colors"
                               />
                             ) : (
-                              <div className="w-16 h-16 rounded-lg bg-surface-700 border border-surface-600 group-hover:border-olive-500 flex items-center justify-center transition-colors">
+                              <div className="w-12 h-12 rounded-lg bg-surface-700 border border-surface-600 group-hover:border-olive-500 flex items-center justify-center transition-colors">
                                 <span className="text-gray-600 group-hover:text-olive-400 text-lg transition-colors">
                                   {user ? '📷' : '⚔'}
                                 </span>
