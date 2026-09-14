@@ -60,7 +60,7 @@ export default function RosterBuilder() {
       
       // Try to restore session state
       if (rosterId) {
-        const session = loadSession(rosterId)
+        const session = await loadSession(rosterId)
         if (session) {
           setWoundState(session.woundState)
           setTurn(session.turn)
@@ -157,9 +157,11 @@ export default function RosterBuilder() {
     }
   }
 
-  const handleBackClick = () => {
+  const handleBackClick = async () => {
     // Clear session when leaving roster
-    clearSession()
+    if (rosterId) {
+      await clearSession(rosterId)
+    }
     navigate('/')
   }
 
