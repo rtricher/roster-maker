@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { Roster, Unit } from '../../../../packages/shared/src/types'
 import { useAuth } from '../lib/AuthContext'
 import { getRosters, addUnit, removeUnit, updateRoster, updateUnit } from '../lib/rosterService'
+import { saveSession, loadSession, clearSession } from '../lib/sessionStorage'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import UnitCard from '../components/UnitCard'
@@ -56,11 +57,32 @@ export default function RosterBuilder() {
         wounds[u.id] = initModelWounds(u)
       })
       setWoundState(wounds)
+      
+      // Try to restore session state
+      if (rosterId) {
+        const session = loadSession(rosterId)
+        if (session) {
+          setWoundState(session.woundState)
+          setTurn(session.turn)
+          setCommandPoints(session.commandPoints)
+        }
+      }
     } else {
       navigate('/')
     }
     setLoading(false)
   }
+
+  // Auto-save session whenever state changes
+  useEffect(() => {
+    if (!rosterId || !roster) return
+    
+    const saveTimer = setTimeout(() => {
+      saveSession(rosterId, woundState, turn, commandPoints)
+    }, 500) // Debounce saves by 500ms
+    
+    return () => clearTimeout(saveTimer)
+  }, [rosterId, woundState, turn, commandPoints, roster])
 
   const handleUpdateModelWounds = (unitId: string, modelWounds: number[]) => {
     setWoundState((prev) => ({ ...prev, [unitId]: modelWounds }))
@@ -135,6 +157,12 @@ export default function RosterBuilder() {
     }
   }
 
+  const handleBackClick = () => {
+    // Clear session when leaving roster
+    clearSession()
+    navigate('/')
+  }
+
   const totalPoints = units.reduce((sum, u) => sum + u.points, 0)
 
   if (loading || !roster) {
@@ -153,7 +181,7 @@ export default function RosterBuilder() {
         detachment={roster.detachment}
         totalPoints={totalPoints}
         maxPoints={roster.maxPoints}
-        onBack={() => navigate('/')}
+        onBack={handleBackClick}
         onEdit={() => setShowEditRoster(true)}
       />
 
