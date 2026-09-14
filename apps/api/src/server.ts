@@ -15,6 +15,7 @@ app.use(express.json())
 let rosters: any[] = []
 let units: any[] = []
 let games: any[] = []
+let sessions: any[] = [] // Session storage for in-game state
 let nextId = 1
 const genId = () => String(nextId++)
 
@@ -64,6 +65,7 @@ app.put('/api/rosters/:id', (req, res) => {
 app.delete('/api/rosters/:id', (req, res) => {
   rosters = rosters.filter((r) => r.id !== req.params.id)
   units = units.filter((u) => u.rosterId !== req.params.id)
+  sessions = sessions.filter((s) => s.rosterId !== req.params.id)
   res.json({ success: true })
 })
 
@@ -98,6 +100,68 @@ app.post('/api/games', (req, res) => {
 app.get('/api/games/:rosterId', (req, res) => {
   const result = games.filter((g) => g.rosterId === req.params.rosterId)
   res.json({ games: result })
+})
+
+// ── Session State (in-game progress) ─────────────────────────────
+/**
+ * Save or update session state for a roster
+ * POST /api/rosters/:rosterId/session
+ * Body: { woundState, turn, commandPoints }
+ */
+app.post('/api/rosters/:rosterId/session', (req, res) => {
+  const { rosterId } = req.params
+  const { woundState, turn, commandPoints } = req.body
+
+  if (!woundState || turn === undefined || commandPoints === undefined) {
+    return res.status(400).json({ error: 'Missing required session fields' })
+  }
+
+  // Find existing session
+  const sessionIdx = sessions.findIndex((s) => s.rosterId === rosterId)
+  
+  const sessionData = {
+    id: sessionIdx !== -1 ? sessions[sessionIdx].id : genId(),
+    rosterId,
+    woundState,
+    turn,
+    commandPoints,
+    savedAt: new Date().toISOString(),
+  }
+
+  if (sessionIdx !== -1) {
+    // Update existing
+    sessions[sessionIdx] = sessionData
+  } else {
+    // Create new
+    sessions.push(sessionData)
+  }
+
+  res.json(sessionData)
+})
+
+/**
+ * Get session state for a roster
+ * GET /api/rosters/:rosterId/session
+ */
+app.get('/api/rosters/:rosterId/session', (req, res) => {
+  const { rosterId } = req.params
+  const session = sessions.find((s) => s.rosterId === rosterId)
+
+  if (!session) {
+    return res.status(404).json({ error: 'No session found for this roster' })
+  }
+
+  res.json(session)
+})
+
+/**
+ * Delete session state for a roster
+ * DELETE /api/rosters/:rosterId/session
+ */
+app.delete('/api/rosters/:rosterId/session', (req, res) => {
+  const { rosterId } = req.params
+  sessions = sessions.filter((s) => s.rosterId !== rosterId)
+  res.json({ success: true })
 })
 
 // ── Error handling ───────────────────────────────────────────────
